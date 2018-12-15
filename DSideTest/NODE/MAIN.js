@@ -9,7 +9,12 @@ DSideTest.MAIN = METHOD({
 		}));*/
 		
 		DSide.Node({
-			
+			tokenName : 'd',
+			port : 1215,
+			version : 0,
+			ips : [
+				'59.6.136.208'
+			]
 		});
 	}
 });
