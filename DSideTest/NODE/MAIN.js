@@ -12,8 +12,67 @@ DSideTest.MAIN = METHOD({
 			tokenName : 'd',
 			port : 1215,
 			version : 0,
+			accountAddress : '0x85A7ed002e7024Dab267024d9ca664Da539a24ef',
+			dataStructures : {
+				
+				Comment : {
+					kind : 'TargetStore',
+					structure : {
+						target : {
+							notEmpty : true,
+							size : {
+								max : 128
+							}
+						},
+						content : {
+							notEmpty : true,
+							size : {
+								max : 1000
+							}
+						}
+					}
+				},
+				
+				Like : {
+					kind : 'TargetStore',
+					structure : {
+						target : {
+							notEmpty : true,
+							size : {
+								max : 128
+							}
+						}
+					}
+				},
+				
+				Dislike : {
+					kind : 'TargetStore',
+					structure : {
+						target : {
+							notEmpty : true,
+							size : {
+								max : 128
+							}
+						}
+					}
+				},
+				
+				Shout : {
+					kind : 'TimeoutStore',
+					structure : {
+						content : {
+							notEmpty : true,
+							size : {
+								max : 1000
+							}
+						}
+					}
+				}
+			},
 			ips : [
-				'59.6.136.208'
+				'192.168.1.39',
+				'59.6.136.208',
+				'218.152.184.238'
 			]
 		});
 	}
