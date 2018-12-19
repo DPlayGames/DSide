@@ -16,7 +16,7 @@ DSideTest.MAIN = METHOD({
 			dataStructures : {
 				
 				Comment : {
-					kind : 'TargetStore',
+					type : 'TargetStore',
 					structure : {
 						target : {
 							notEmpty : true,
@@ -33,8 +33,20 @@ DSideTest.MAIN = METHOD({
 					}
 				},
 				
+				ViewCount : {
+					type : 'TargetStore',
+					structure : {
+						target : {
+							notEmpty : true,
+							size : {
+								max : 128
+							}
+						}
+					}
+				},
+				
 				Like : {
-					kind : 'TargetStore',
+					type : 'TargetStore',
 					structure : {
 						target : {
 							notEmpty : true,
@@ -46,7 +58,7 @@ DSideTest.MAIN = METHOD({
 				},
 				
 				Dislike : {
-					kind : 'TargetStore',
+					type : 'TargetStore',
 					structure : {
 						target : {
 							notEmpty : true,
@@ -58,7 +70,7 @@ DSideTest.MAIN = METHOD({
 				},
 				
 				Shout : {
-					kind : 'TimeoutStore',
+					type : 'TimeoutStore',
 					structure : {
 						content : {
 							notEmpty : true,

@@ -24,22 +24,39 @@ DSide.Node = CLASS({
 		// 실제로 연결된 IP들
 		let ips;
 		
+		// 다른 노드가 연결할 서버를 생성합니다.
 		SOCKET_SERVER(port, (clientInfo, on, off, send, disconnect) => {
 			
-			// 접속한 클라이언트의 IP 반환
+			// 접속한 클라이언트의 IP를 반환합니다.
 			on('getClientIp', (notUsing, ret) => {
 				ret(clientInfo.ip);
 			});
 			
-			// 실제로 연결된 IP들 반환
-			// 없는 경우 초기 연결할 IP들 반환
+			// 실제로 연결된 IP들을 반환합니다.
+			// 없는 경우 초기 연결할 IP들을 반환합니다.
 			on('getIps', (notUsing, ret) => {
 				ret(ips === undefined ? initIps : inps);
+			});
+			
+			// 데이터 저장소의 Hash를 반환합니다.
+			on('getStoreHash', (storeName, ret) => {
+				ret(dataManager.getStoreHash(storeHash));
+			});
+			
+			// 데이터 목록을 반환합니다.
+			on('getDataSet', (params, ret) => {
+				ret(dataManager.getDataSet(params));
+			});
+			
+			// 데이터를 저장합니다.
+			on('saveData', (params, ret) => {
+				dataManager.saveData(params);
 			});
 		});
 		
 		let nodes = [];
 		
+		// 노드를 찾고 연결합니다.
 		NEXT([
 		(next) => {
 			
@@ -137,7 +154,7 @@ DSide.Node = CLASS({
 		() => {
 			return () => {
 				
-				// 데이터를 싱크합니다.
+				// 가장 빠른 노드로부터 데이터의 싱크를 맞춥니다.
 				//TODO:
 			};
 		}]);
