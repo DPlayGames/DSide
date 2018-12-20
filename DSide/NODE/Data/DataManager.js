@@ -4,9 +4,12 @@ DSide('Data').DataManager = CLASS({
 	init : (inner, self, dataStructures) => {
 		//REQUIRED: dataStructures
 		
+		let storeNames = [];
 		let stores = {};
 		
 		EACH(dataStructures, (dataStructure, storeName) => {
+			
+			storeNames.push(storeName);
 			
 			// 데이터의 타겟이 존재하는 스토어
 			if (dataStructure.type === 'TargetStore') {
@@ -24,6 +27,10 @@ DSide('Data').DataManager = CLASS({
 				});
 			}
 		});
+		
+		let getStoreNames = self.getStoreNames = () => {
+			return storeNames;
+		};
 		
 		let getStoreHash = self.getStoreHash = (storeName) => {
 			//REQUIRED: storeName

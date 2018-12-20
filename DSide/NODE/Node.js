@@ -40,7 +40,7 @@ DSide.Node = CLASS({
 			
 			// 데이터 저장소의 Hash를 반환합니다.
 			on('getStoreHash', (storeName, ret) => {
-				ret(dataManager.getStoreHash(storeHash));
+				ret(dataManager.getStoreHash(storeName));
 			});
 			
 			// 데이터 목록을 반환합니다.
@@ -75,7 +75,7 @@ DSide.Node = CLASS({
 						send('getClientIp', (clientIp) => {
 							
 							if (ips === undefined) {
-								next(clientIp);
+								next(clientIp, send, disconnect);
 							}
 							
 							else {
@@ -88,7 +88,7 @@ DSide.Node = CLASS({
 		},
 		
 		(next) => {
-			return (clientIp) => {
+			return (clientIp, send, disconnect) => {
 				
 				// IPv6 to IPv4
 				if (clientIp.substring(0, 7) === '::ffff:') {
@@ -154,8 +154,26 @@ DSide.Node = CLASS({
 		() => {
 			return () => {
 				
+				let getFastestNode = (callback) => {
+					if (nodes.length > 0) {
+						callback(nodes[0]);
+					}
+				};
+				
 				// 가장 빠른 노드로부터 데이터의 싱크를 맞춥니다.
-				//TODO:
+				EACH(dataManager.getStoreNames(), (storeName) => {
+					
+					getFastestNode((fastestNode) => {
+						
+						fastestNode.send({
+							methodName : 'getStoreHash',
+							data : storeName
+						}, (storeHash) => {
+							
+							console.log(storeHash);
+						});
+					});
+				});
 			};
 		}]);
 	}
