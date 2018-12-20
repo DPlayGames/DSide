@@ -63,11 +63,13 @@ DSide('Data').DataManager = CLASS({
 		let saveData = self.saveData = (params) => {
 			//REQUIRED: params
 			//REQUIRED: params.storeName
+			//OPTIONAL: params.target
 			//REQUIRED: params.signature
 			//REQUIRED: params.account
 			//REQUIRED: params.data
 			
 			let storeName = params.storeName;
+			let target = params.target;
 			let signature = params.signature;
 			let address = params.address;
 			let data = params.data;
@@ -75,6 +77,7 @@ DSide('Data').DataManager = CLASS({
 			let store = stores[storeName];
 			
 			store.saveData({
+				target : target,
 				signature : signature,
 				address : address,
 				data : data

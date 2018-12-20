@@ -13,7 +13,7 @@ DSide('Data').Store = CLASS((cls) => {
 			let storeName = params.storeName;
 			let structure = params.structure;
 			
-			let dataSet = {};
+			let dataSet = [];
 			
 			// 이미 저장된 데이터들을 불러옵니다.
 			READ_FILE({
@@ -29,7 +29,36 @@ DSide('Data').Store = CLASS((cls) => {
 			});
 			
 			let getHash = self.getHash = () => {
-				return ETHUtil.keccak256(STRINGIFY(dataSet)).toString('hex');
+				return '0x' + ETHUtil.keccak256(STRINGIFY(dataSet)).toString('hex');
+			};
+			
+			let getDataSet = self.getDataSet = () => {
+				return dataSet;
+			};
+			
+			let saveData = self.saveData = (params) => {
+				//REQUIRED: params
+				//REQUIRED: params.signature
+				//REQUIRED: params.account
+				//REQUIRED: params.data
+				
+				let signature = params.signature;
+				let address = params.address;
+				let data = params.data;
+				
+				// 데이터를 저장하기 전 검증합니다.
+				if (DSide.Data.Verify({
+					signature : signature,
+					address : address,
+					data : data
+				}) === true) {
+					
+					dataSet.push({
+						signature : signature,
+						address : address,
+						data : data
+					});
+				}
 			};
 		}
 	};
