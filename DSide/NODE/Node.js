@@ -32,6 +32,11 @@ DSide.Node = CLASS({
 				ret(clientInfo.ip);
 			});
 			
+			// 노드의 버전을 반환합니다.
+			on('getVersion', (notUsing, ret) => {
+				ret(version);
+			});
+			
 			// 실제로 연결된 IP들을 반환합니다.
 			// 없는 경우 초기 연결할 IP들을 반환합니다.
 			on('getIps', (notUsing, ret) => {
@@ -115,26 +120,37 @@ DSide.Node = CLASS({
 								},
 								success : (on, off, send, disconnect) => {
 									
-									let node = {
-										on : on,
-										off : off,
-										send : send,
-										disconnect : disconnect
-									};
-									
-									// 빠르게 접속된 순서대로 저장
-									nodes.push(node);
-									
-									// 첫 노드를 찾은 순간부터 데이터 싱크
-									if (nodes.length === 1) {
-										next();
-									}
-									
-									on('__DISCONNECTED', () => {
-										REMOVE({
-											array : nodes,
-											value : node
-										});
+									send('getVersion', (nodeVersion) => {
+										
+										// 버전이 같아야합니다.
+										if (nodeVersion === version) {
+											
+											let node = {
+												on : on,
+												off : off,
+												send : send,
+												disconnect : disconnect
+											};
+											
+											// 빠르게 접속된 순서대로 저장
+											nodes.push(node);
+											
+											// 첫 노드를 찾은 순간부터 데이터 싱크
+											if (nodes.length === 1) {
+												next();
+											}
+											
+											on('__DISCONNECTED', () => {
+												REMOVE({
+													array : nodes,
+													value : node
+												});
+											});
+										}
+										
+										else {
+											disconnect();
+										}
 									});
 								}
 							});
@@ -161,7 +177,7 @@ DSide.Node = CLASS({
 				};
 				
 				// 가장 빠른 노드로부터 데이터의 싱크를 맞춥니다.
-				EACH(dataManager.getStoreNames(), (storeName) => {
+				EACH(dataStructures, (dataStructure, storeName) => {
 					
 					getFastestNode((fastestNode) => {
 						
@@ -170,7 +186,14 @@ DSide.Node = CLASS({
 							data : storeName
 						}, (storeHash) => {
 							
-							console.log(storeHash);
+							// 해시값이 다르면 데이터 싱크를 시작합니다.
+							if (dataManager.getStoreHash(storeName) !== storeHash) {
+								
+								// 대상이 필요한 경우
+								if (dataStructure.type === 'TargetStore') {
+									//TODO:
+								}
+							}
 						});
 					});
 				});

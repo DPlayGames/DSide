@@ -45,7 +45,7 @@ DSide('Data').TargetStore = CLASS((cls) => {
 				//REQUIRED: params.account
 				//REQUIRED: params.data
 				
-				let signature = params.target;
+				let target = params.target;
 				let signature = params.signature;
 				let address = params.address;
 				let data = params.data;
