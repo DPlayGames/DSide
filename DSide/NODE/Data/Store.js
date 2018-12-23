@@ -13,7 +13,7 @@ DSide('Data').Store = CLASS((cls) => {
 			let storeName = params.storeName;
 			let structure = params.structure;
 			
-			let dataSet = [];
+			let dataSet = {};
 			
 			// 이미 저장된 데이터들을 불러옵니다.
 			READ_FILE({
@@ -38,27 +38,59 @@ DSide('Data').Store = CLASS((cls) => {
 			
 			let saveData = self.saveData = (params) => {
 				//REQUIRED: params
-				//REQUIRED: params.signature
-				//REQUIRED: params.account
+				//REQUIRED: params.hash
 				//REQUIRED: params.data
+				//REQUIRED: params.data.account
 				
-				let signature = params.signature;
-				let address = params.address;
+				let hash = params.hash;
 				let data = params.data;
+				let address = data.address;
 				
 				// 데이터를 저장하기 전 검증합니다.
 				if (DSide.Data.Verify({
-					signature : signature,
+					signature : hash,
 					address : address,
 					data : data
 				}) === true) {
 					
-					dataSet.push({
-						signature : signature,
-						address : address,
-						data : data
-					});
+					dataSet[hash] = data;
 				}
+			};
+			
+			let getData = self.getData = (hash) => {
+				//REQUIRED: hash
+				
+				return dataSet[hash];
+			};
+			
+			let updateData = self.updateData = (params) => {
+				//REQUIRED: params
+				//REQUIRED: params.originHash
+				//REQUIRED: params.hash
+				//REQUIRED: params.data
+				//REQUIRED: params.account
+				
+				let originHash = params.originHash;
+				let hash = params.hash;
+				let data = params.data;
+				let address = data.address;
+				
+				delete dataSet[originHash];
+				
+				// 데이터를 저장하기 전 검증합니다.
+				if (DSide.Data.Verify({
+					hash : hash,
+					address : address,
+					data : data
+				}) === true) {
+					dataSet[hash] = data;
+				}
+			};
+			
+			let removeData = self.removeData = (hash) => {
+				//REQUIRED: hash
+				
+				delete dataSet[hash];
 			};
 		}
 	};

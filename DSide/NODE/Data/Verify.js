@@ -14,14 +14,20 @@ DSide('Data').Verify = METHOD((m) => {
 			let address = params.address;
 			let data = params.data;
 			
-			let sortedData = {};
-			Object.keys(data).sort().forEach((key) => {
-				sortedData[key] = data[key];
-			});
+			let str;
+			if (CHECK_IS_DATA(data) === true) {
+				let sortedData = {};
+				Object.keys(data).sort().forEach((key) => {
+					sortedData[key] = data[key];
+				});
+				str = STRINGIFY(sortedData);
+			} else {
+				str = data;
+			}
 			
 			let signatureData = ETHUtil.fromRpcSig(signature);
 			
-			let message = Buffer.from(STRINGIFY(sortedData));
+			let message = Buffer.from(str);
 			let prefix = Buffer.from('\x19Ethereum Signed Message:\n');
 			let prefixedMsg = ETHUtil.keccak256(
 				Buffer.concat([prefix, Buffer.from(String(message.length)), message])

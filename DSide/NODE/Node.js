@@ -3,14 +3,16 @@ DSide.Node = CLASS({
 	init : (inner, self, params) => {
 		//REQUIRED: params
 		//REQUIRED: params.tokenName
-		//REQUIRED: params.port
+		//REQUIRED: params.socketServerPort
+		//REQUIRED: params.webSocketServerPort
 		//REQUIRED: params.version
 		//REQUIRED: params.accountAddress
 		//REQUIRED: params.dataStructures
 		//REQUIRED: params.ips
 		
 		let tokenName = params.tokenName;
-		let port = params.port;
+		let socketServerPort = params.socketServerPort;
+		let webSocketServerPort = params.webSocketServerPort;
 		let version = params.version;
 		let accountAddress = params.accountAddress;
 		let dataStructures = params.dataStructures;
@@ -24,8 +26,20 @@ DSide.Node = CLASS({
 		// 실제로 연결된 IP들
 		let ips;
 		
+		// 현재 국제 표준시를 밀리세컨드 단위로
+		let getNowUTC = () => {
+			
+			// 국제 표준시
+			let now = new Date();
+			
+			return now.getTime() + now.getTimezoneOffset() * 60000
+		};
+		
 		// 다른 노드가 연결할 서버를 생성합니다.
-		SOCKET_SERVER(port, (clientInfo, on, off, send, disconnect) => {
+		MULTI_PROTOCOL_SOCKET_SERVER({
+			socketServerPort : socketServerPort,
+			webServer : WEB_SERVER(webSocketServerPort)
+		}, (clientInfo, on, off, send, disconnect) => {
 			
 			// 접속한 클라이언트의 IP를 반환합니다.
 			on('getClientIp', (notUsing, ret) => {
@@ -37,6 +51,11 @@ DSide.Node = CLASS({
 				ret(version);
 			});
 			
+			// 노드의 현재 시간을 반환합니다.
+			on('getNowUTC', (notUsing, ret) => {
+				ret(getNowUTC());
+			});
+			
 			// 실제로 연결된 IP들을 반환합니다.
 			// 없는 경우 초기 연결할 IP들을 반환합니다.
 			on('getIps', (notUsing, ret) => {
@@ -45,17 +64,108 @@ DSide.Node = CLASS({
 			
 			// 데이터 저장소의 Hash를 반환합니다.
 			on('getStoreHash', (storeName, ret) => {
+				//REQUIRED: storeName
+				
 				ret(dataManager.getStoreHash(storeName));
 			});
 			
 			// 데이터 목록을 반환합니다.
-			on('getDataSet', (params, ret) => {
-				ret(dataManager.getDataSet(params));
+			on('getDataSet', (storeNameOrParams, ret) => {
+				//REQUIRED: storeNameOrParams
+				//REQUIRED: storeNameOrParams.storeName
+				//OPTIONAL: storeNameOrParams.target
+				
+				ret(dataManager.getDataSet(storeNameOrParams));
 			});
 			
 			// 데이터를 저장합니다.
 			on('saveData', (params, ret) => {
-				dataManager.saveData(params);
+				//REQUIRED: params
+				//REQUIRED: params.storeName
+				//OPTIONAL: params.target
+				//REQUIRED: params.hash
+				//REQUIRED: params.address
+				//REQUIRED: params.data
+				//REQUIRED: params.createTime
+				
+				let createTime = params.createTime;
+				
+				// 10초 이내에 데이터가 작성된 경우에만 저장합니다.
+				if (getNowUTC() - createTime.getTime() < 10000) {
+					
+					// 데이터 검증은 Store가 알아서 합니다.
+					dataManager.saveData(params);
+				}
+			});
+			
+			// 데이터를 반환합니다.
+			on('getData', (params, ret) => {
+				//REQUIRED: params
+				//REQUIRED: params.storeName
+				//OPTIONAL: params.target
+				//REQUIRED: params.hash
+				
+				ret(dataManager.getData(params));
+			});
+			
+			// 데이터를 수정합니다.
+			on('updateData', (params, ret) => {
+				//REQUIRED: params
+				//REQUIRED: params.storeName
+				//OPTIONAL: params.target
+				//REQUIRED: params.originHash
+				//REQUIRED: params.signature
+				//REQUIRED: params.hash
+				//REQUIRED: params.address
+				//REQUIRED: params.data
+				//REQUIRED: params.lastUpdateTime
+				
+				let storeName = params.storeName;
+				let target = params.target;
+				let originHash = params.originHash;
+				let signature = params.signature;
+				let hash = params.hash;
+				let address = params.address;
+				let data = params.data;
+				let lastUpdateTime = params.lastUpdateTime;
+				
+				// 10초 이내에 데이터가 수정된 경우에만 저장합니다.
+				if (getNowUTC() - lastUpdateTime.getTime() < 10000) {
+					
+					// 데이터 작성자인지 검증합니다.
+					if (DSide.Data.Verify({
+						signature : signature,
+						address : address,
+						data : originHash
+					}) === true) {
+						dataManager.updateData(params);
+					}
+				}
+			});
+			
+			// 데이터를 삭제합니다.
+			on('removeData', (params, ret) => {
+				//REQUIRED: params
+				//REQUIRED: params.storeName
+				//OPTIONAL: params.target
+				//REQUIRED: params.hash
+				//REQUIRED: params.signature
+				//REQUIRED: params.address
+				
+				let storeName = params.storeName;
+				let target = params.target;
+				let hash = params.hash;
+				let signature = params.signature;
+				let address = params.address;
+				
+				// 데이터 작성자인지 검증합니다.
+				if (DSide.Data.Verify({
+					signature : signature,
+					address : address,
+					data : hash
+				}) === true) {
+					dataManager.removeData(params);
+				}
 			});
 		});
 		
@@ -191,7 +301,101 @@ DSide.Node = CLASS({
 								
 								// 대상이 필요한 경우
 								if (dataStructure.type === 'TargetStore') {
-									//TODO:
+									
+									fastestNode.send({
+										methodName : 'getDataSet',
+										data : storeName
+									}, (nodeDataSet) => {
+										
+										let dataSet = dataManager.getDataSet(storeName);
+										
+										// 데이터를 비교합니다.
+										EACH(nodeDataSet, (hash, target) => {
+											
+											// 해시값이 다르면 내부 데이터를 비교합니다.
+											if (dataSet[target] !== hash) {
+												
+												fastestNode.send({
+													methodName : 'getDataSet',
+													data : {
+														storeName : storeName,
+														target : target
+													}
+												}, (nodeDataSet) => {
+													
+													let dataSet = dataManager.getDataSet({
+														storeName : storeName,
+														target : target
+													});
+													
+													// 현재 없는 데이터면 생성
+													EACH(nodeDataSet, (data, hash) => {
+														if (dataSet[hash] === undefined) {
+															dataManager.saveData({
+																storeName : storeName,
+																target : target,
+																hash : hash,
+																data : data
+															});
+														}
+													});
+													
+													// 노드에 없는 데이터면 삭제
+													EACH(dataSet, (data, hash) => {
+														if (nodeDataSet[hash] === undefined) {
+															dataManager.removeData({
+																storeName : storeName,
+																target : target,
+																hash : hash
+															});
+														}
+													});
+												});
+											}
+										});
+										
+										// 노드에 없는 대상이면 삭제
+										EACH(dataSet, (hash, target) => {
+											if (nodeDataSet[target] === undefined) {
+												dataManager.removeData({
+													storeName : storeName,
+													target : target
+												});
+											}
+										});
+									});
+								}
+								
+								else {
+									
+									fastestNode.send({
+										methodName : 'getDataSet',
+										data : storeName
+									}, (nodeDataSet) => {
+										
+										let dataSet = dataManager.getDataSet(storeName);
+										
+										// 현재 없는 데이터면 생성
+										EACH(nodeDataSet, (data, hash) => {
+											if (dataSet[hash] === undefined) {
+												dataManager.saveData({
+													storeName : storeName,
+													hash : hash,
+													data : data
+												});
+											}
+										});
+										
+										// 노드에 없는 데이터면 삭제
+										EACH(dataSet, (data, hash) => {
+											if (nodeDataSet[hash] === undefined) {
+												dataManager.removeData({
+													storeName : storeName,
+													hash : hash
+												});
+											}
+										});
+									});
 								}
 							}
 						});

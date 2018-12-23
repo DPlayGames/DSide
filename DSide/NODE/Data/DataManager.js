@@ -4,6 +4,9 @@ DSide('Data').DataManager = CLASS({
 	init : (inner, self, dataStructures) => {
 		//REQUIRED: dataStructures
 		
+		// 유저들의 토큰 정보를 저장하는 스토어
+		let tokenStore;
+		
 		let stores = {};
 		
 		EACH(dataStructures, (dataStructure, storeName) => {
@@ -57,24 +60,93 @@ DSide('Data').DataManager = CLASS({
 			//REQUIRED: params
 			//REQUIRED: params.storeName
 			//OPTIONAL: params.target
-			//REQUIRED: params.signature
-			//REQUIRED: params.account
+			//REQUIRED: params.hash
 			//REQUIRED: params.data
+			//REQUIRED: params.data.address
 			
 			let storeName = params.storeName;
 			let target = params.target;
-			let signature = params.signature;
-			let address = params.address;
+			let hash = params.hash;
 			let data = params.data;
 			
 			let store = stores[storeName];
 			
 			store.saveData({
 				target : target,
-				signature : signature,
-				address : address,
+				hash : hash,
 				data : data
 			});
+		};
+		
+		let getData = self.getData = (params) => {
+			//REQUIRED: params
+			//REQUIRED: params.storeName
+			//OPTIONAL: params.target
+			//REQUIRED: params.hash
+			
+			let storeName = params.storeName;
+			let target = params.target;
+			let hash = params.hash;
+			
+			let store = stores[storeName];
+			
+			if (target === undefined) {
+				return store.getData(hash);
+			}
+			
+			else {
+				return store.getData({
+					target : target,
+					hash : hash
+				});
+			}
+		};
+		
+		let updateData = self.updateData = (params) => {
+			//REQUIRED: params
+			//REQUIRED: params.storeName
+			//OPTIONAL: params.target
+			//REQUIRED: params.originHash
+			//REQUIRED: params.hash
+			//REQUIRED: params.data
+			//REQUIRED: params.data.address
+			
+			let storeName = params.storeName;
+			let target = params.target;
+			let hash = params.hash;
+			let data = params.data;
+			
+			let store = stores[storeName];
+			
+			store.updateData({
+				target : target,
+				hash : hash,
+				data : data
+			});
+		};
+		
+		let removeData = self.removeData = (params) => {
+			//REQUIRED: params
+			//REQUIRED: params.storeName
+			//OPTIONAL: params.target
+			//REQUIRED: params.hash
+			
+			let storeName = params.storeName;
+			let target = params.target;
+			let hash = params.hash;
+			
+			let store = stores[storeName];
+			
+			if (target === undefined) {
+				store.removeData(hash);
+			}
+			
+			else {
+				store.removeData({
+					target : target,
+					hash : hash
+				});
+			}
 		};
 	}
 });
