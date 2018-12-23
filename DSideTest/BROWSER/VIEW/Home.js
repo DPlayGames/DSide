@@ -6,14 +6,14 @@ DSideTest.Home = CLASS({
 
 	init : (inner, self) => {
 		
-		let testAddress = '0x85A7ed002e7024Dab267024d9ca664Da539a24ef';
+		/*let testAddress = '0x85A7ed002e7024Dab267024d9ca664Da539a24ef';
 		let testPrivateKey = '71FC4E7C7CFBA6C2796F1EB22A836AECE73D8939DEDFB594BA84D937C3436CCE';
 		let testMnemonic = 'smooth affair engine mandate matrix palm glimpse song ozone omit earn hub';
 		
 		console.log(DSide.Data.Sign({
 			data : 'message',
 			privateKey : testPrivateKey
-		}));
+		}));*/
 		
 		/*window.web3 = new Web3(Web3.givenProvider);
 		

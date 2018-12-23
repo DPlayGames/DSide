@@ -3,7 +3,32 @@ DSide('Data').Store = CLASS((cls) => {
 	
 	const ETHUtil = require('ethereumjs-util');
 	
+	let generateHash = cls.generateHash = (data) => {
+		//REQUIRED: data
+		
+		return '0x' + ETHUtil.keccak256(STRINGIFY(data)).toString('hex');
+	};
+	
 	return {
+		
+		preset : (params) => {
+			//REQUIRED: params
+			//REQUIRED: params.structure
+			
+			let structure = params.structure;
+			
+			structure.storeName = {
+				notEmpty : true,
+				size : {
+					max : 256
+				}
+			};
+			
+			structure.address = {
+				notEmpty : true,
+				size : 42
+			};
+		},
 		
 		init : (inner, self, params) => {
 			//REQUIRED: params
@@ -13,7 +38,11 @@ DSide('Data').Store = CLASS((cls) => {
 			let storeName = params.storeName;
 			let structure = params.structure;
 			
+			let valid = VALID(structure);
+			
 			let dataSet = {};
+			
+			let isToSave = false;
 			
 			// 이미 저장된 데이터들을 불러옵니다.
 			READ_FILE({
@@ -29,11 +58,21 @@ DSide('Data').Store = CLASS((cls) => {
 			});
 			
 			let getHash = self.getHash = () => {
-				return '0x' + ETHUtil.keccak256(STRINGIFY(dataSet)).toString('hex');
+				return generateHash(dataSet);
 			};
 			
 			let getDataSet = self.getDataSet = () => {
 				return dataSet;
+			};
+			
+			let checkValid = self.checkValid = (data) => {
+				
+				let result = valid.checkAndWash(data);
+				
+				return {
+					isValid : result.checkHasError() !== true,
+					validErrors : result.getErrors()
+				};
 			};
 			
 			let saveData = self.saveData = (params) => {
@@ -44,6 +83,9 @@ DSide('Data').Store = CLASS((cls) => {
 				
 				let hash = params.hash;
 				let data = params.data;
+				
+				console.log(checkValid(data));
+				
 				let address = data.address;
 				
 				// 데이터를 저장하기 전 검증합니다.
@@ -54,6 +96,8 @@ DSide('Data').Store = CLASS((cls) => {
 				}) === true) {
 					
 					dataSet[hash] = data;
+					
+					isToSave = true;
 				}
 			};
 			
@@ -68,22 +112,26 @@ DSide('Data').Store = CLASS((cls) => {
 				//REQUIRED: params.originHash
 				//REQUIRED: params.hash
 				//REQUIRED: params.data
-				//REQUIRED: params.account
+				//REQUIRED: params.data.account
 				
 				let originHash = params.originHash;
 				let hash = params.hash;
 				let data = params.data;
+				
 				let address = data.address;
 				
-				delete dataSet[originHash];
-				
 				// 데이터를 저장하기 전 검증합니다.
-				if (DSide.Data.Verify({
+				if (getData(originHash) !== undefined && DSide.Data.Verify({
 					hash : hash,
 					address : address,
 					data : data
 				}) === true) {
+					
+					removeData(originHash);
+					
 					dataSet[hash] = data;
+					
+					isToSave = true;
 				}
 			};
 			
@@ -91,7 +139,27 @@ DSide('Data').Store = CLASS((cls) => {
 				//REQUIRED: hash
 				
 				delete dataSet[hash];
+				
+				isToSave = true;
 			};
+			
+			let setToSave = inner.setToSave = () => {
+				isToSave = true;
+			};
+			
+			// 10초에 한번씩 데이터 저장
+			INTERVAL(10, () => {
+				
+				if (isToSave === true) {
+					
+					WRITE_FILE({
+						path : 'data/' + storeName + '.json',
+						content : STRINGIFY(dataSet)
+					});
+					
+					isToSave = false;
+				}
+			});
 		}
 	};
 });

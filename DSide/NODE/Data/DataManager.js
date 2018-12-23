@@ -26,6 +26,14 @@ DSide('Data').DataManager = CLASS({
 					structure : dataStructure.structure
 				});
 			}
+			
+			// 데이터를 저장하는 스토어
+			else {
+				stores[storeName] = DSide.Data.Store({
+					storeName : storeName,
+					structure : dataStructure.structure
+				});
+			}
 		});
 		
 		let getStoreHash = self.getStoreHash = (storeName) => {
@@ -58,16 +66,16 @@ DSide('Data').DataManager = CLASS({
 		
 		let saveData = self.saveData = (params) => {
 			//REQUIRED: params
-			//REQUIRED: params.storeName
-			//OPTIONAL: params.target
 			//REQUIRED: params.hash
 			//REQUIRED: params.data
-			//REQUIRED: params.data.address
+			//REQUIRED: params.data.storeName
+			//OPTIONAL: params.data.target
 			
-			let storeName = params.storeName;
-			let target = params.target;
 			let hash = params.hash;
 			let data = params.data;
+			
+			let storeName = data.storeName;
+			let target = data.target;
 			
 			let store = stores[storeName];
 			
@@ -104,17 +112,17 @@ DSide('Data').DataManager = CLASS({
 		
 		let updateData = self.updateData = (params) => {
 			//REQUIRED: params
-			//REQUIRED: params.storeName
-			//OPTIONAL: params.target
 			//REQUIRED: params.originHash
 			//REQUIRED: params.hash
 			//REQUIRED: params.data
-			//REQUIRED: params.data.address
+			//REQUIRED: params.data.storeName
+			//OPTIONAL: params.data.target
 			
-			let storeName = params.storeName;
-			let target = params.target;
 			let hash = params.hash;
 			let data = params.data;
+			
+			let storeName = data.storeName;
+			let target = data.target;
 			
 			let store = stores[storeName];
 			
@@ -147,6 +155,19 @@ DSide('Data').DataManager = CLASS({
 					hash : hash
 				});
 			}
+		};
+		
+		let removeTarget = self.removeTarget = (params) => {
+			//REQUIRED: params
+			//REQUIRED: params.storeName
+			//REQUIRED: params.target
+			
+			let storeName = params.storeName;
+			let target = params.target;
+			
+			let store = stores[storeName];
+			
+			store.removeTarget(target);
 		};
 	}
 });
