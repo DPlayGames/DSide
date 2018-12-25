@@ -28,6 +28,15 @@ DSide('Data').Store = CLASS((cls) => {
 				notEmpty : true,
 				size : 42
 			};
+			
+			structure.createTime = {
+				notEmpty : true,
+				date : true
+			};
+			
+			structure.lastUpdateTime = {
+				date : true
+			};
 		},
 		
 		init : (inner, self, params) => {
@@ -91,7 +100,7 @@ DSide('Data').Store = CLASS((cls) => {
 					let address = data.address;
 					
 					// 데이터를 저장하기 전 검증합니다.
-					if (data.lastUpdateTime === undefined && DSide.Data.Verify({
+					if (data.createTime !== undefined && data.lastUpdateTime === undefined && DSide.Data.Verify({
 						signature : hash,
 						address : address,
 						data : data
@@ -100,6 +109,12 @@ DSide('Data').Store = CLASS((cls) => {
 						dataSet[hash] = data;
 						
 						isToSave = true;
+						
+						// 1 토큰 소비
+						DSide.Data.TokenStore.useToken({
+							address : address,
+							amount : 1
+						});
 						
 						return {
 							savedData : data
@@ -133,37 +148,91 @@ DSide('Data').Store = CLASS((cls) => {
 				//REQUIRED: params.data
 				//REQUIRED: params.data.account
 				//REQUIRED: params.data.createTime
+				//REQUIRED: params.data.lastUpdateTime
 				
 				let originHash = params.originHash;
 				let hash = params.hash;
 				let data = params.data;
 				
-				let address = data.address;
-				let createTime = data.createTime;
+				let validResult = checkValid(data);
 				
-				let originData = getData(originHash);
+				if (validResult.isValid === true) {
+					
+					let address = data.address;
+					let createTime = data.createTime;
+					let lastUpdateTime = data.lastUpdateTime;
+					
+					let originData = getData(originHash);
+					
+					if (originData !== undefined) {
+						
+						// 데이터를 저장하기 전 검증합니다.
+						if (originData.createTime === createTime && lastUpdateTime !== undefined && DSide.Data.Verify({
+							hash : hash,
+							address : address,
+							data : data
+						}) === true) {
+							
+							removeData(originHash);
+							
+							dataSet[hash] = data;
+							
+							isToSave = true;
+							
+							// 1 토큰 소비
+							DSide.Data.TokenStore.useToken({
+								address : address,
+								amount : 1
+							});
+							
+							return {
+								originData : originData,
+								savedData : data
+							};
+						}
+						
+						else {
+							return {
+								isNotVerified : true
+							};
+						}
+					}
+					
+					else {
+						return {
+							isNotExists : true
+						};
+					}
+				}
 				
-				// 데이터를 저장하기 전 검증합니다.
-				if (originData !== undefined && originData.createTime === createTime && DSide.Data.Verify({
-					hash : hash,
-					address : address,
-					data : data
-				}) === true) {
-					
-					removeData(originHash);
-					
-					dataSet[hash] = data;
-					
-					isToSave = true;
+				else {
+					return {
+						validErrors : validResult.validErrors
+					};
 				}
 			};
 			
 			let removeData = self.removeData = (hash) => {
 				//REQUIRED: hash
 				
-				delete dataSet[hash];
+				let originData = getData(originHash);
 				
-				isToSave = true;
+				if (originData !== undefined) {
+					
+					delete dataSet[hash];
+					
+					isToSave = true;
+					
+					return {
+						originData : originData
+					};
+				}
+				
+				else {
+					return {
+						isNotExists : true
+					};
+				}
 			};
 			
 			let setToSave = inner.setToSave = () => {

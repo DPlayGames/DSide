@@ -80,23 +80,50 @@ DSide('Data').TargetStore = CLASS({
 				let hash = params.hash;
 				let data = params.data;
 				
-				let target = data.target;
-				let address = data.address;
+				let validResult = checkValid(data);
 				
-				// 데이터를 저장하기 전 검증합니다.
-				if (data.lastUpdateTime === undefined && DSide.Data.Verify({
-					signature : hash,
-					address : address,
-					data : data
-				}) === true) {
+				if (validResult.isValid === true) {
 					
-					if (targetDataSet[target] === undefined) {
-						targetDataSet[target] = {};
+					let target = data.target;
+					let address = data.address;
+					
+					// 데이터를 저장하기 전 검증합니다.
+					if (data.createTime !== undefined && data.lastUpdateTime === undefined && DSide.Data.Verify({
+						signature : hash,
+						address : address,
+						data : data
+					}) === true) {
+						
+						if (targetDataSet[target] === undefined) {
+							targetDataSet[target] = {};
+						}
+						
+						targetDataSet[target][hash] = data;
+						
+						saveTargetHash(target);
+						
+						// 1 토큰 소비
+						DSide.Data.TokenStore.useToken({
+							address : address,
+							amount : 1
+						});
+						
+						return {
+							savedData : data
+						};
 					}
 					
-					targetDataSet[target][hash] = data;
-					
-					saveTargetHash(target);
+					else {
+						return {
+							isNotVerified : true
+						};
+					}
+				}
+				
+				else {
+					return {
+						validErrors : validResult.validErrors
+					};
 				}
 			};
 		});
@@ -129,33 +156,72 @@ DSide('Data').TargetStore = CLASS({
 				//REQUIRED: params.data.target
 				//REQUIRED: params.data.account
 				//REQUIRED: params.data.createTime
+				//REQUIRED: params.data.lastUpdateTime
 				
 				let originHash = params.originHash;
 				let hash = params.hash;
 				let data = params.data;
 				
-				let target = data.target;
-				let address = data.address;
-				let createTime = data.createTime;
+				let validResult = checkValid(data);
 				
-				let originData;
-				
-				if (targetDataSet[target] !== undefined) {
-					originData = targetDataSet[target][originHash];
+				if (validResult.isValid === true) {
+					
+					let target = data.target;
+					let address = data.address;
+					let createTime = data.createTime;
+					let lastUpdateTime = data.lastUpdateTime;
+					
+					let originData;
+					
+					if (targetDataSet[target] !== undefined) {
+						originData = targetDataSet[target][originHash];
+					}
+					
+					if (originData !== undefined) {
+						
+						// 데이터를 저장하기 전 검증합니다.
+						if (originData.createTime === createTime && lastUpdateTime !== undefined && DSide.Data.Verify({
+							signature : hash,
+							address : address,
+							data : data
+						}) === true) {
+							
+							delete targetDataSet[target][originHash];
+							
+							targetDataSet[target][hash] = data;
+							
+							saveTargetHash(target);
+							
+							// 1 토큰 소비
+							DSide.Data.TokenStore.useToken({
+								address : address,
+								amount : 1
+							});
+							
+							return {
+								originData : originData,
+								savedData : data
+							};
+						}
+						
+						else {
+							return {
+								isNotVerified : true
+							};
+						}
+					}
+					
+					else {
+						return {
+							isNotExists : true
+						};
+					}
 				}
 				
-				// 데이터를 저장하기 전 검증합니다.
-				if (originData !== undefined && originData.createTime === createTime && DSide.Data.Verify({
-					signature : hash,
-					address : address,
-					data : data
-				}) === true) {
-					
-					delete targetDataSet[target][originHash];
-					
-					targetDataSet[target][hash] = data;
-					
-					saveTargetHash(target);
+				else {
+					return {
+						validErrors : validResult.validErrors
+					};
 				}
 			};
 		});
@@ -168,10 +234,13 @@ DSide('Data').TargetStore = CLASS({
 				//REQUIRED: params.target
 				//REQUIRED: params.hash
 				
-				let target = params.target;
-				let hash = params.hash;
+				let originData = getData(params);
 				
-				if (targetDataSet[target] !== undefined) {
+				if (originData !== undefined) {
+					
+					let target = params.target;
+					let hash = params.hash;
+					
 					delete targetDataSet[target][hash];
 					
 					if (CHECK_IS_EMPTY_DATA(targetDataSet[target]) === true) {
@@ -179,6 +248,16 @@ DSide('Data').TargetStore = CLASS({
 					}
 					
 					saveTargetHash(target);
+					
+					return {
+						originData : originData
+					};
+				}
+				
+				else {
+					return {
+						isNotExists : true
+					};
 				}
 			};
 		});

@@ -48,6 +48,11 @@ DSide.Node = CLASS((cls) => {
 					ret(clientInfo.ip);
 				});
 				
+				// 노드가 연결됩니다.
+				on('connectNode', (notUsing, ret) => {
+					ips.push(clientInfo.ip);
+				});
+				
 				// 노드의 버전을 반환합니다.
 				on('getVersion', (notUsing, ret) => {
 					ret(version);
@@ -98,7 +103,25 @@ DSide.Node = CLASS((cls) => {
 					if (getNowUTC() - createTime.getTime() < 5000) {
 						
 						// 데이터 검증은 Store가 알아서 합니다.
-						dataManager.saveData(params);
+						let result = dataManager.saveData(params);
+						
+						// 성공적으로 저장되면 모든 노드에 전파
+						if (result.savedData !== undefined) {
+							EACH(nodes, (node) => {
+								node.send({
+									methodName : 'saveData',
+									data : params
+								});
+							});
+						}
+						
+						ret(result);
+					}
+					
+					else {
+						ret({
+							isTimeout : true
+						});
 					}
 				});
 				
@@ -141,8 +164,33 @@ DSide.Node = CLASS((cls) => {
 							address : address,
 							data : originHash
 						}) === true) {
-							dataManager.updateData(params);
+							
+							let result = dataManager.updateData(params);
+							
+							// 성공적으로 수정되면 모든 노드에 전파
+							if (result.savedData !== undefined) {
+								EACH(nodes, (node) => {
+									node.send({
+										methodName : 'updateData',
+										data : params
+									});
+								});
+							}
+							
+							ret(result);
 						}
+						
+						else {
+							ret({
+								isNotVerified : true
+							});
+						}
+					}
+					
+					else {
+						ret({
+							isTimeout : true
+						});
 					}
 				});
 				
@@ -167,8 +215,49 @@ DSide.Node = CLASS((cls) => {
 						address : address,
 						data : hash
 					}) === true) {
-						dataManager.removeData(params);
+						
+						let result = dataManager.removeData(params);
+						
+						// 성공적으로 삭제되면 모든 노드에 전파
+						if (result.originData !== undefined) {
+							EACH(nodes, (node) => {
+								node.send({
+									methodName : 'removeData',
+									data : params
+								});
+							});
+						}
+						
+						ret(result);
 					}
+					
+					else {
+						ret({
+							isNotVerified : true
+						});
+					}
+				});
+				
+				// 토큰의 잔고를 확인합니다.
+				on('getTokenBalance', (address, ret) => {
+					//REQUIRED: address
+					
+					ret(DSide.Data.TokenStore.getBalance(address));
+				});
+				
+				// 토큰을 이체합니다.
+				on('transferToken', (params, ret) => {
+					//REQUIRED: params
+					//REQUIRED: params.address
+					//REQUIRED: params.to
+					
+					let address = params.address;
+					let to = params.to;
+					
+					ret(DSide.Data.TokenStore.transfer({
+						address : address,
+						to : to
+					}));
 				});
 			});
 			
@@ -208,14 +297,8 @@ DSide.Node = CLASS((cls) => {
 			(next) => {
 				return (clientIp, send, disconnect) => {
 					
-					// IPv6 to IPv4
-					if (clientIp.substring(0, 7) === '::ffff:') {
-						clientIp = clientIp.substring(7);
-					}
-					
 					// 내 스스로에는 연결 금지
-					if (true) { //TODO: 테스트용
-					//if (ip !== clientIp) {
+					if (ip !== clientIp) {
 						
 						// 실제로 연결된 IP 목록들을 가져옵니다.
 						send('getIps', (_ips) => {
@@ -248,6 +331,8 @@ DSide.Node = CLASS((cls) => {
 												// 빠르게 접속된 순서대로 저장
 												nodes.push(node);
 												
+												node.send('connectNode');
+												
 												// 첫 노드를 찾은 순간부터 데이터 싱크
 												if (nodes.length === 1) {
 													next();
@@ -268,6 +353,9 @@ DSide.Node = CLASS((cls) => {
 									}
 								});
 							});
+							
+							// 현재 클라이언트 IP를 추가
+							ips.push(clientIp);
 							
 							// 실제로 연결된 IP 목록들을 가져온 후에는 접속 종료
 							disconnect();

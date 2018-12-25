@@ -4,9 +4,6 @@ DSide('Data').DataManager = CLASS({
 	init : (inner, self, dataStructures) => {
 		//REQUIRED: dataStructures
 		
-		// 유저들의 토큰 정보를 저장하는 스토어
-		let tokenStore;
-		
 		let stores = {};
 		
 		EACH(dataStructures, (dataStructure, storeName) => {
