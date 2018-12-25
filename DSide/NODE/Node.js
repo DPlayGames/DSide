@@ -491,6 +491,21 @@ DSide.Node = CLASS((cls) => {
 					});
 				};
 			}]);
+			
+			// 하루에 한 번 데이터를 통합합니다.
+			INTERVAL(1, () => {
+				
+				let nowCal = CALENDAR(getNowUTC());
+				
+				// 자정 정각이 되면 실행
+				if (nowCal.getHour() === 0 && nowCal.getMinute() === 0 && nowCal.getSecond() === 0) {
+					
+					// 토큰 충전
+					DSide.Data.TokenStore.charge();
+					
+					//TODO: 데이터 통합 기능
+				}
+			});
 		}
 	};
 });
