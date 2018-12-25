@@ -84,7 +84,7 @@ DSide('Data').TargetStore = CLASS({
 				let address = data.address;
 				
 				// 데이터를 저장하기 전 검증합니다.
-				if (DSide.Data.Verify({
+				if (data.lastUpdateTime === undefined && DSide.Data.Verify({
 					signature : hash,
 					address : address,
 					data : data
@@ -128,6 +128,7 @@ DSide('Data').TargetStore = CLASS({
 				//REQUIRED: params.data
 				//REQUIRED: params.data.target
 				//REQUIRED: params.data.account
+				//REQUIRED: params.data.createTime
 				
 				let originHash = params.originHash;
 				let hash = params.hash;
@@ -135,19 +136,22 @@ DSide('Data').TargetStore = CLASS({
 				
 				let target = data.target;
 				let address = data.address;
+				let createTime = data.createTime;
+				
+				let originData;
+				
+				if (targetDataSet[target] !== undefined) {
+					originData = targetDataSet[target][originHash];
+				}
 				
 				// 데이터를 저장하기 전 검증합니다.
-				if (DSide.Data.Verify({
+				if (originData !== undefined && originData.createTime === createTime && DSide.Data.Verify({
 					signature : hash,
 					address : address,
 					data : data
 				}) === true) {
 					
-					if (targetDataSet[target] === undefined) {
-						targetDataSet[target] = {};
-					} else {
-						delete targetDataSet[target][originHash];
-					}
+					delete targetDataSet[target][originHash];
 					
 					targetDataSet[target][hash] = data;
 					

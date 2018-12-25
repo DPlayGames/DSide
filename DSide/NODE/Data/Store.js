@@ -84,20 +84,39 @@ DSide('Data').Store = CLASS((cls) => {
 				let hash = params.hash;
 				let data = params.data;
 				
-				console.log(checkValid(data));
+				let validResult = checkValid(data);
 				
-				let address = data.address;
+				if (validResult.isValid === true) {
+					
+					let address = data.address;
+					
+					// 데이터를 저장하기 전 검증합니다.
+					if (data.lastUpdateTime === undefined && DSide.Data.Verify({
+						signature : hash,
+						address : address,
+						data : data
+					}) === true) {
+						
+						dataSet[hash] = data;
+						
+						isToSave = true;
+						
+						return {
+							savedData : data
+						};
+					}
+					
+					else {
+						return {
+							isNotVerified : true
+						};
+					}
+				}
 				
-				// 데이터를 저장하기 전 검증합니다.
-				if (DSide.Data.Verify({
-					signature : hash,
-					address : address,
-					data : data
-				}) === true) {
-					
-					dataSet[hash] = data;
-					
-					isToSave = true;
+				else {
+					return {
+						validErrors : validResult.validErrors
+					};
 				}
 			};
 			
@@ -113,15 +132,19 @@ DSide('Data').Store = CLASS((cls) => {
 				//REQUIRED: params.hash
 				//REQUIRED: params.data
 				//REQUIRED: params.data.account
+				//REQUIRED: params.data.createTime
 				
 				let originHash = params.originHash;
 				let hash = params.hash;
 				let data = params.data;
 				
 				let address = data.address;
+				let createTime = data.createTime;
+				
+				let originData = getData(originHash);
 				
 				// 데이터를 저장하기 전 검증합니다.
-				if (getData(originHash) !== undefined && DSide.Data.Verify({
+				if (originData !== undefined && originData.createTime === createTime && DSide.Data.Verify({
 					hash : hash,
 					address : address,
 					data : data

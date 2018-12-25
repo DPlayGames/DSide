@@ -121,6 +121,7 @@ DSide.Node = CLASS((cls) => {
 					//REQUIRED: params.data.storeName
 					//OPTIONAL: params.data.target
 					//REQUIRED: params.data.address
+					//REQUIRED: params.data.createTime
 					//REQUIRED: params.data.lastUpdateTime
 					
 					let originHash = params.originHash;
