@@ -11,10 +11,5 @@ DSideTest.MAIN = METHOD({
 			uri : 'article',
 			target : DSideTest.Article
 		});
-		
-		DSideTest.MATCH_VIEW({
-			uri : 'christmas',
-			target : DSideTest.Christmas
-		});
 	}
 });

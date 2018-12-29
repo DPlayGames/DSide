@@ -94,23 +94,30 @@ DSide('Data').TargetStore = CLASS({
 						data : data
 					}) === true) {
 						
-						if (targetDataSet[target] === undefined) {
-							targetDataSet[target] = {};
-						}
-						
-						targetDataSet[target][hash] = data;
-						
-						saveTargetHash(target);
-						
 						// 1 토큰 소비
-						DSide.Data.TokenStore.useToken({
+						if (DSide.Data.TokenStore.useToken({
 							address : address,
 							amount : 1
-						});
+						}) === true) {
+							
+							if (targetDataSet[target] === undefined) {
+								targetDataSet[target] = {};
+							}
+							
+							targetDataSet[target][hash] = data;
+							
+							saveTargetHash(target);
+							
+							return {
+								savedData : data
+							};
+						}
 						
-						return {
-							savedData : data
-						};
+						else {
+							return {
+								isNotEnoughToken : true
+							};
+						}
 					}
 					
 					else {
@@ -186,22 +193,29 @@ DSide('Data').TargetStore = CLASS({
 							data : data
 						}) === true) {
 							
-							delete targetDataSet[target][originHash];
-							
-							targetDataSet[target][hash] = data;
-							
-							saveTargetHash(target);
-							
 							// 1 토큰 소비
-							DSide.Data.TokenStore.useToken({
+							if (DSide.Data.TokenStore.useToken({
 								address : address,
 								amount : 1
-							});
+							}) === true) {
+								
+								delete targetDataSet[target][originHash];
+								
+								targetDataSet[target][hash] = data;
+								
+								saveTargetHash(target);
+								
+								return {
+									originData : originData,
+									savedData : data
+								};
+							}
 							
-							return {
-								originData : originData,
-								savedData : data
-							};
+							else {
+								return {
+									isNotEnoughToken : true
+								};
+							}
 						}
 						
 						else {

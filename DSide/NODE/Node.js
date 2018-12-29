@@ -249,15 +249,32 @@ DSide.Node = CLASS((cls) => {
 				on('transferToken', (params, ret) => {
 					//REQUIRED: params
 					//REQUIRED: params.address
+					//REQUIRED: params.hash
 					//REQUIRED: params.to
+					//REQUIRED: params.amount
 					
-					let address = params.address;
-					let to = params.to;
+					if (DSide.Data.TokenStore.transfer(params) === true) {
+						
+						// 성공적으로 이체하면 모든 노드에 전파
+						if (result.originData !== undefined) {
+							EACH(nodes, (node) => {
+								node.send({
+									methodName : 'transferToken',
+									data : params
+								});
+							});
+						}
+						
+						ret({
+							isDone : true
+						});
+					}
 					
-					ret(DSide.Data.TokenStore.transfer({
-						address : address,
-						to : to
-					}));
+					else {
+						ret({
+							isNotVerified : true
+						});
+					}
 				});
 			});
 			
@@ -504,6 +521,7 @@ DSide.Node = CLASS((cls) => {
 					DSide.Data.TokenStore.charge();
 					
 					//TODO: 데이터 통합 기능
+					
 				}
 			});
 		}

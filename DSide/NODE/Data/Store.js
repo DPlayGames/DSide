@@ -106,19 +106,26 @@ DSide('Data').Store = CLASS((cls) => {
 						data : data
 					}) === true) {
 						
-						dataSet[hash] = data;
-						
-						isToSave = true;
-						
 						// 1 토큰 소비
-						DSide.Data.TokenStore.useToken({
+						if (DSide.Data.TokenStore.useToken({
 							address : address,
 							amount : 1
-						});
+						}) === true) {
+							
+							dataSet[hash] = data;
+							
+							isToSave = true;
+							
+							return {
+								savedData : data
+							};
+						}
 						
-						return {
-							savedData : data
-						};
+						else {
+							return {
+								isNotEnoughToken : true
+							};
+						}
 					}
 					
 					else {
@@ -173,22 +180,29 @@ DSide('Data').Store = CLASS((cls) => {
 							data : data
 						}) === true) {
 							
-							removeData(originHash);
-							
-							dataSet[hash] = data;
-							
-							isToSave = true;
-							
 							// 1 토큰 소비
-							DSide.Data.TokenStore.useToken({
+							if (DSide.Data.TokenStore.useToken({
 								address : address,
 								amount : 1
-							});
+							}) === true) {
+								
+								removeData(originHash);
+								
+								dataSet[hash] = data;
+								
+								isToSave = true;
+								
+								return {
+									originData : originData,
+									savedData : data
+								};
+							}
 							
-							return {
-								originData : originData,
-								savedData : data
-							};
+							else {
+								return {
+									isNotEnoughToken : true
+								};
+							}
 						}
 						
 						else {
@@ -240,17 +254,20 @@ DSide('Data').Store = CLASS((cls) => {
 			};
 			
 			// 10초에 한번씩 데이터 저장
-			INTERVAL(10, () => {
+			DELAY(RANDOM(10), () => {
 				
-				if (isToSave === true) {
+				INTERVAL(10, RAR(() => {
 					
-					WRITE_FILE({
-						path : 'data/' + storeName + '.json',
-						content : STRINGIFY(dataSet)
-					});
-					
-					isToSave = false;
-				}
+					if (isToSave === true) {
+						
+						WRITE_FILE({
+							path : 'data/' + storeName + '.json',
+							content : STRINGIFY(dataSet)
+						});
+						
+						isToSave = false;
+					}
+				}));
 			});
 		}
 	};

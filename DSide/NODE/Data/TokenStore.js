@@ -3,7 +3,11 @@ DSide('Data').TokenStore = OBJECT({
 	
 	init : (inner, self) => {
 		
-		let dataSet = {};
+		const INIT_TOKEN_AMOUNT = 20;
+		
+		const ETHUtil = require('ethereumjs-util');
+		
+		let accounts = {};
 		
 		let isToSave = false;
 		
@@ -15,10 +19,58 @@ DSide('Data').TokenStore = OBJECT({
 			notExists : () => {
 				// ignore.
 			},
-			success : (dataSetStr) => {
-				dataSet = PARSE_STR(dataSetStr.toString());
+			success : (accountsStr) => {
+				accounts = PARSE_STR(accountsStr.toString());
 			}
 		});
+		
+		let getBalance = self.getBalance = (address) => {
+			//REQUIRED: address
+			
+			return accounts[address] !== undefined ? accounts[address] : INIT_TOKEN_AMOUNT;
+		};
+		
+		let transfer = self.transfer = (params) => {
+			//REQUIRED: params
+			//REQUIRED: params.address
+			//REQUIRED: params.hash
+			//REQUIRED: params.to
+			//REQUIRED: params.amount
+			
+			let address = params.address;
+			let hash = params.hash;
+			let to = params.to;
+			let amount = params.amount;
+			
+			if (
+				DSide.Data.Verify({
+					signature : hash,
+					address : address,
+					data : {
+						to : to,
+						amount : amount
+					}
+				}) === true &&
+				
+				// 토큰 1개를 수수료로
+				getBalance(address) >= amount + 1
+			) {
+				
+				useToken({
+					address : address,
+					amount : amount + 1
+				});
+				
+				increaseToken({
+					address : to,
+					amount : amount
+				});
+			}
+			
+			else {
+				return false;
+			}
+		};
 		
 		let useToken = self.useToken = (params) => {
 			//REQUIRED: params
@@ -27,6 +79,67 @@ DSide('Data').TokenStore = OBJECT({
 			
 			let address = params.address;
 			let amount = params.amount;
+			
+			return increaseToken({
+				address : address,
+				amount : -amount
+			});
 		};
+		
+		// 초기화 토큰량보다 부족한 계정에 토큰을 충전합니다.
+		let charge = self.charge = () => {
+			
+			EACH(accounts, (amount, address) => {
+				
+				if (amount < INIT_TOKEN_AMOUNT) {
+					
+					// 계정을 삭제하면 다음에 계정을 생성할 때 초기화 토큰량으로 초기화됨
+					delete accounts[address];
+					
+					isToSave = true;
+				}
+			});
+		};
+		
+		let increaseToken = self.increaseToken = (params) => {
+			//REQUIRED: params
+			//REQUIRED: params.address
+			//REQUIRED: params.amount
+			
+			let address = params.address;
+			let amount = params.amount;
+			
+			if (getBalance(address) + amount >= 0) {
+				
+				// 계정이 없으면 생성합니다.
+				if (accounts[address] === undefined) {
+					accounts[address] = INIT_TOKEN_AMOUNT;
+				}
+				
+				accounts[address] += amount;
+				
+				isToSave = true;
+				return true;
+			}
+			
+			return false;
+		};
+		
+		// 10초에 한번씩 데이터 저장
+		DELAY(RANDOM(10), () => {
+			
+			INTERVAL(10, RAR(() => {
+				
+				if (isToSave === true) {
+					
+					WRITE_FILE({
+						path : 'data/Token.json',
+						content : STRINGIFY(accounts)
+					});
+					
+					isToSave = false;
+				}
+			}));
+		});
 	}
 });
