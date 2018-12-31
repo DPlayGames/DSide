@@ -48,7 +48,7 @@ DSide.Node = CLASS((cls) => {
 				on('getClientIp', (ip, ret) => {
 					
 					// 초기 노드면 최초 접근 시간을 저장합니다.
-					if (ipInfos === undefined) {
+					if (ip !== undefined && ipInfos === undefined) {
 						
 						ipInfos = {};
 						connectionTimes = {};
@@ -630,9 +630,9 @@ DSide.Node = CLASS((cls) => {
 			}]);
 			
 			// 하루에 한 번 데이터를 통합합니다.
-			INTERVAL(1, () => {
+			INTERVAL(1, RAR(() => {
 				
-				let nowCal = CALENDAR(getNowUTC());
+				let nowCal = CALENDAR(new Date(getNowUTC()));
 				
 				// 자정 정각이 되면 실행
 				if (nowCal.getHour() === 0 && nowCal.getMinute() === 0 && nowCal.getSecond() === 0) {
@@ -672,7 +672,7 @@ DSide.Node = CLASS((cls) => {
 					let hashNodes = {};
 					hashNodes[tokenStoreHash] = [];
 					
-					PARALLEL(nodes,
+					PARALLEL(nodes, [
 					(node, done) => {
 						
 						let isDone = false;
@@ -734,7 +734,7 @@ DSide.Node = CLASS((cls) => {
 								}
 							});
 						});
-					});
+					}]);
 					
 					// 모든 데이터 통합
 					EACH(dataStructures, (dataStructure, storeName) => {
@@ -747,7 +747,7 @@ DSide.Node = CLASS((cls) => {
 						let hashNodes = {};
 						hashNodes[storeHash] = [];
 						
-						PARALLEL(nodes,
+						PARALLEL(nodes, [
 						(node, done) => {
 							
 							let isDone = false;
@@ -812,10 +812,10 @@ DSide.Node = CLASS((cls) => {
 									}
 								});
 							});
-						});
+						}]);
 					});
 				}
-			});
+			}));
 		}
 	};
 });
