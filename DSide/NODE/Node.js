@@ -72,19 +72,7 @@ DSide.Node = CLASS((cls) => {
 							accountAddress : accountAddress
 						};
 						
-						on('__DISCONNECTED', () => {
-							
-							if (ipInfos[clientInfo.ip] !== undefined) {
-								
-								if (connectionTimes[accountAddress] === undefined) {
-									connectionTimes[accountAddress] = 0;
-								}
-								
-								connectionTimes[accountAddress] += Date.now() - ipInfos[clientInfo.ip].connectionTime.getTime();
-								
-								delete ipInfos[clientInfo.ip];
-							}
-						});
+						createNodeClient(clientInfo.ip, accountAddress);
 					}
 				});
 				
@@ -476,6 +464,68 @@ DSide.Node = CLASS((cls) => {
 			
 			let nodes = [];
 			
+			let createNodeClient = (ip, accountAddress, callback) => {
+				
+				CONNECT_TO_SOCKET_SERVER({
+					host : ip,
+					port : socketServerPort
+				}, {
+					error : () => {
+						delete connectionTimes[accountAddress];
+						delete ipInfos[ip];
+					},
+					success : (on, off, send, disconnect) => {
+						
+						send('getVersion', (nodeVersion) => {
+							
+							// 버전이 같아야합니다.
+							if (nodeVersion === version) {
+								
+								let node = {
+									accountAddress : accountAddress,
+									on : on,
+									off : off,
+									send : send,
+									disconnect : disconnect
+								};
+								
+								nodes.push(node);
+								
+								on('__DISCONNECTED', () => {
+									
+									REMOVE({
+										array : nodes,
+										value : node
+									});
+									
+									if (ipInfos[ip] !== undefined) {
+										
+										if (connectionTimes[accountAddress] === undefined) {
+											connectionTimes[accountAddress] = 0;
+										}
+										
+										connectionTimes[accountAddress] += Date.now() - ipInfos[ip].connectTime.getTime();
+										
+										delete ipInfos[ip];
+									}
+								});
+								
+								if (callback !== undefined) {
+									callback(node);
+								}
+							}
+							
+							else {
+								disconnect();
+								
+								delete connectionTimes[accountAddress];
+								delete ipInfos[ip];
+							}
+						});
+					}
+				});
+			};
+			
 			// 노드를 찾고 연결합니다.
 			NEXT([
 			(next) => {
@@ -501,7 +551,7 @@ DSide.Node = CLASS((cls) => {
 							}, (clientIp) => {
 								
 								// 내 스스로에는 연결 금지
-								if (ip !== clientIp) {
+								if (ip !== clientIp && clientIp.substring(0, 8) !== '192.168.') {
 									
 									if (isInitConnected !== true) {
 										next(clientIp, send, disconnect);
@@ -531,63 +581,25 @@ DSide.Node = CLASS((cls) => {
 						ipInfos = result.ipInfos;
 						connectionTimes = result.connectionTimes;
 						
+						let isFirst = true;
+						
 						// 노드들을 찾습니다.
 						EACH(ipInfos, (info, ip) => {
 							
 							// 내 스스로에는 연결 금지
 							if (ip !== clientIp) {
 								
-								CONNECT_TO_SOCKET_SERVER({
-									host : ip,
-									port : socketServerPort
-								}, {
-									error : () => {
-										delete connectionTimes[info.accountAddress];
-										delete ipInfos[ip];
-									},
-									success : (on, off, send, disconnect) => {
-										
-										send('getVersion', (nodeVersion) => {
-											
-											// 버전이 같아야합니다.
-											if (nodeVersion === version) {
-												
-												let node = {
-													accountAddress : info.accountAddress,
-													on : on,
-													off : off,
-													send : send,
-													disconnect : disconnect
-												};
-												
-												// 빠르게 접속된 순서대로 저장
-												nodes.push(node);
-												
-												node.send({
-													methodName : 'connectNode',
-													data : accountAddress
-												});
-												
-												// 첫 노드를 찾은 순간부터 데이터 싱크
-												if (nodes.length === 1) {
-													next();
-												}
-												
-												on('__DISCONNECTED', () => {
-													REMOVE({
-														array : nodes,
-														value : node
-													});
-												});
-											}
-											
-											else {
-												disconnect();
-												
-												delete connectionTimes[info.accountAddress];
-												delete ipInfos[ip];
-											}
-										});
+								createNodeClient(ip, info.accountAddress, (node) => {
+									
+									node.send({
+										methodName : 'connectNode',
+										data : accountAddress
+									});
+									
+									// 첫 노드를 찾은 순간부터 데이터 싱크
+									if (isFirst === true) {
+										next();
+										isFirst = false;
 									}
 								});
 							}
@@ -647,7 +659,7 @@ DSide.Node = CLASS((cls) => {
 							connectionTimes[info.accountAddress] = 0;
 						}
 						
-						connectionTimes[info.accountAddress] += Date.now() - info.connectionTime.getTime();
+						connectionTimes[info.accountAddress] += Date.now() - info.connectTime.getTime();
 						
 						info.connectionTime = new Date();
 					});
