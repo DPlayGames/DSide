@@ -5,8 +5,6 @@ DSide('Data').TokenStore = OBJECT({
 		
 		const INIT_TOKEN_AMOUNT = 20;
 		
-		const ETHUtil = require('ethereumjs-util');
-		
 		let accounts = {};
 		
 		let isToSave = false;
@@ -23,6 +21,14 @@ DSide('Data').TokenStore = OBJECT({
 				accounts = PARSE_STR(accountsStr.toString());
 			}
 		});
+		
+		let getHash = self.getHash = () => {
+			return DSide.Data.Store.generateHash(accounts);
+		};
+		
+		let getAccounts = self.getAccounts = () => {
+			return accounts;
+		};
 		
 		let getBalance = self.getBalance = (address) => {
 			//REQUIRED: address
@@ -110,6 +116,14 @@ DSide('Data').TokenStore = OBJECT({
 			return false;
 		};
 		
+		// 계정 삭제
+		let removeAccount = self.removeAccount = (address) => {
+			
+			delete accounts[address];
+			
+			isToSave = true;
+		};
+		
 		// 초기화 토큰량보다 부족한 계정에 토큰을 충전합니다.
 		let chargeLacks = self.chargeLacks = () => {
 			
@@ -118,9 +132,7 @@ DSide('Data').TokenStore = OBJECT({
 				if (amount < INIT_TOKEN_AMOUNT) {
 					
 					// 계정을 삭제하면 다음에 계정을 생성할 때 초기화 토큰량으로 초기화됨
-					delete accounts[address];
-					
-					isToSave = true;
+					removeAccount(address);
 				}
 			});
 		};
@@ -136,7 +148,7 @@ DSide('Data').TokenStore = OBJECT({
 			
 			increaseToken({
 				address : address,
-				amount : connectionTime / 1000 / 60 / 60 * INIT_TOKEN_AMOUNT
+				amount : INTEGER(connectionTime / 1000 / 60 / 60 * INIT_TOKEN_AMOUNT)
 			});
 		};
 		

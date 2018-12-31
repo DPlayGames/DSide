@@ -36,8 +36,7 @@ DSide.Node = CLASS((cls) => {
 			
 			// 실제로 연결된 IP들의 정보
 			let ipInfos;
-			
-			let connectionTimes = {};
+			let connectionTimes;
 			
 			// 다른 노드가 연결할 서버를 생성합니다.
 			MULTI_PROTOCOL_SOCKET_SERVER({
@@ -50,7 +49,10 @@ DSide.Node = CLASS((cls) => {
 					
 					// 초기 노드면 최초 접근 시간을 저장합니다.
 					if (ipInfos === undefined) {
+						
 						ipInfos = {};
+						connectionTimes = {};
+						
 						ipInfos[ip] = {
 							connectTime : new Date(),
 							accountAddress : accountAddress
@@ -99,8 +101,21 @@ DSide.Node = CLASS((cls) => {
 				// 실제로 연결된 IP들의 정보를 반환합니다.
 				on('getIpInfos', (notUsing, ret) => {
 					if (ipInfos !== undefined) {
-						ret(ipInfos);
+						ret({
+							ipInfos : ipInfos,
+							connectionTimes : connectionTimes
+						});
 					}
+				});
+				
+				// 토큰 저장소의 Hash를 반환합니다.
+				on('getTokenStoreHash', (notUsing, ret) => {
+					ret(DSide.Data.TokenStore.getHash());
+				});
+				
+				// 토큰 저장소의 계정들을 반환합니다.
+				on('getTokenAccounts', (notUsing, ret) => {
+					ret(DSide.Data.TokenStore.getAccounts());
 				});
 				
 				// 데이터 저장소의 Hash를 반환합니다.
@@ -312,6 +327,153 @@ DSide.Node = CLASS((cls) => {
 				});
 			});
 			
+			// 토큰 스토어 싱크를 수행합니다.
+			let syncTokenStore = (fastestSend) => {
+				
+				fastestSend('getTokenStoreHash', (hash) => {
+					
+					// 해시값이 다르면 데이터 싱크를 시작합니다.
+					if (DSide.Data.TokenStore.getHash() !== hash) {
+						
+						fastestSend('getTokenAccounts', (tokenAccounts) => {
+							
+							// 토큰량을 비교하여 수정
+							EACH(tokenAccounts, (balance, accountAddress) => {
+								
+								let _balance = DSide.Data.TokenStore.getBalance(accountAddress);
+								
+								if (_balance !== balance) {
+									
+									DSide.Data.TokenStore.increaseToken({
+										address : accountAddress,
+										amount : balance - _balance
+									});
+								}
+							});
+							
+							// 노드에 없는 계정이면 삭제
+							EACH(DSide.Data.TokenStore.getAccounts(), (balance, accountAddress) => {
+								if (tokenAccounts[accountAddress] === undefined) {
+									DSide.Data.TokenStore.removeAccount(accountAddress);
+								}
+							});
+						});
+					}
+				});
+			};
+			
+			// 데이터 스토어의 싱크를 수행합니다.
+			let syncDataStore = (storeName, fastestSend) => {
+				
+				let dataStructure = dataStructures[storeName];
+					
+				fastestSend({
+					methodName : 'getStoreHash',
+					data : storeName
+				}, (storeHash) => {
+					
+					// 해시값이 다르면 데이터 싱크를 시작합니다.
+					if (dataManager.getStoreHash(storeName) !== storeHash) {
+						
+						// 대상이 필요한 경우
+						if (dataStructure.type === 'TargetStore') {
+							
+							fastestSend({
+								methodName : 'getDataSet',
+								data : storeName
+							}, (nodeDataSet) => {
+								
+								let dataSet = dataManager.getDataSet(storeName);
+								
+								// 데이터를 비교합니다.
+								EACH(nodeDataSet, (hash, target) => {
+									
+									// 해시값이 다르면 내부 데이터를 비교합니다.
+									if (dataSet[target] !== hash) {
+										
+										fastestSend({
+											methodName : 'getDataSet',
+											data : {
+												storeName : storeName,
+												target : target
+											}
+										}, (nodeDataSet) => {
+											
+											let dataSet = dataManager.getDataSet({
+												storeName : storeName,
+												target : target
+											});
+											
+											// 현재 없는 데이터면 생성
+											EACH(nodeDataSet, (data, hash) => {
+												if (dataSet[hash] === undefined) {
+													dataManager.saveData({
+														hash : hash,
+														data : data
+													});
+												}
+											});
+											
+											// 노드에 없는 데이터면 삭제
+											EACH(dataSet, (data, hash) => {
+												if (nodeDataSet[hash] === undefined) {
+													dataManager.removeData({
+														storeName : storeName,
+														target : target,
+														hash : hash
+													});
+												}
+											});
+										});
+									}
+								});
+								
+								// 노드에 없는 대상이면 삭제
+								EACH(dataSet, (hash, target) => {
+									if (nodeDataSet[target] === undefined) {
+										dataManager.removeTarget({
+											storeName : storeName,
+											target : target
+										});
+									}
+								});
+							});
+						}
+						
+						else {
+							
+							fastestSend({
+								methodName : 'getDataSet',
+								data : storeName
+							}, (nodeDataSet) => {
+								
+								let dataSet = dataManager.getDataSet(storeName);
+								
+								// 현재 없는 데이터면 생성
+								EACH(nodeDataSet, (data, hash) => {
+									if (dataSet[hash] === undefined) {
+										dataManager.saveData({
+											hash : hash,
+											data : data
+										});
+									}
+								});
+								
+								// 노드에 없는 데이터면 삭제
+								EACH(dataSet, (data, hash) => {
+									if (nodeDataSet[hash] === undefined) {
+										dataManager.removeData({
+											storeName : storeName,
+											hash : hash
+										});
+									}
+								});
+							});
+						}
+					}
+				});
+			};
+			
 			let nodes = [];
 			
 			// 노드를 찾고 연결합니다.
@@ -364,9 +526,10 @@ DSide.Node = CLASS((cls) => {
 				return (clientIp, send, disconnect) => {
 					
 					// 실제로 연결된 IP들의 정보를 가져옵니다.
-					send('getIpInfos', (_ipInfos) => {
+					send('getIpInfos', (result) => {
 						
-						ipInfos = _ipInfos;
+						ipInfos = result.ipInfos;
+						connectionTimes = result.connectionTimes;
 						
 						// 노드들을 찾습니다.
 						EACH(ipInfos, (info, ip) => {
@@ -379,7 +542,8 @@ DSide.Node = CLASS((cls) => {
 									port : socketServerPort
 								}, {
 									error : () => {
-										// 연결 오류를 무시합니다.
+										delete connectionTimes[info.accountAddress];
+										delete ipInfos[ip];
 									},
 									success : (on, off, send, disconnect) => {
 										
@@ -389,6 +553,7 @@ DSide.Node = CLASS((cls) => {
 											if (nodeVersion === version) {
 												
 												let node = {
+													accountAddress : info.accountAddress,
 													on : on,
 													off : off,
 													send : send,
@@ -418,6 +583,9 @@ DSide.Node = CLASS((cls) => {
 											
 											else {
 												disconnect();
+												
+												delete connectionTimes[info.accountAddress];
+												delete ipInfos[ip];
 											}
 										});
 									}
@@ -444,123 +612,19 @@ DSide.Node = CLASS((cls) => {
 			() => {
 				return () => {
 					
-					let getFastestNode = (callback) => {
+					// 가장 빠른 노드로부터 데이터의 싱크를 맞춥니다.
+					let fastestSend = (params, callback) => {
 						if (nodes.length > 0) {
-							callback(nodes[0]);
+							nodes[0].send(params, callback);
 						}
 					};
 					
-					// 가장 빠른 노드로부터 데이터의 싱크를 맞춥니다.
+					// 토큰 스토어 싱크
+					syncTokenStore(fastestSend);
+					
+					// 데이터 스토어들 싱크
 					EACH(dataStructures, (dataStructure, storeName) => {
-						
-						getFastestNode((fastestNode) => {
-							
-							fastestNode.send({
-								methodName : 'getStoreHash',
-								data : storeName
-							}, (storeHash) => {
-								
-								// 해시값이 다르면 데이터 싱크를 시작합니다.
-								if (dataManager.getStoreHash(storeName) !== storeHash) {
-									
-									// 대상이 필요한 경우
-									if (dataStructure.type === 'TargetStore') {
-										
-										fastestNode.send({
-											methodName : 'getDataSet',
-											data : storeName
-										}, (nodeDataSet) => {
-											
-											let dataSet = dataManager.getDataSet(storeName);
-											
-											// 데이터를 비교합니다.
-											EACH(nodeDataSet, (hash, target) => {
-												
-												// 해시값이 다르면 내부 데이터를 비교합니다.
-												if (dataSet[target] !== hash) {
-													
-													fastestNode.send({
-														methodName : 'getDataSet',
-														data : {
-															storeName : storeName,
-															target : target
-														}
-													}, (nodeDataSet) => {
-														
-														let dataSet = dataManager.getDataSet({
-															storeName : storeName,
-															target : target
-														});
-														
-														// 현재 없는 데이터면 생성
-														EACH(nodeDataSet, (data, hash) => {
-															if (dataSet[hash] === undefined) {
-																dataManager.saveData({
-																	hash : hash,
-																	data : data
-																});
-															}
-														});
-														
-														// 노드에 없는 데이터면 삭제
-														EACH(dataSet, (data, hash) => {
-															if (nodeDataSet[hash] === undefined) {
-																dataManager.removeData({
-																	storeName : storeName,
-																	target : target,
-																	hash : hash
-																});
-															}
-														});
-													});
-												}
-											});
-											
-											// 노드에 없는 대상이면 삭제
-											EACH(dataSet, (hash, target) => {
-												if (nodeDataSet[target] === undefined) {
-													dataManager.removeTarget({
-														storeName : storeName,
-														target : target
-													});
-												}
-											});
-										});
-									}
-									
-									else {
-										
-										fastestNode.send({
-											methodName : 'getDataSet',
-											data : storeName
-										}, (nodeDataSet) => {
-											
-											let dataSet = dataManager.getDataSet(storeName);
-											
-											// 현재 없는 데이터면 생성
-											EACH(nodeDataSet, (data, hash) => {
-												if (dataSet[hash] === undefined) {
-													dataManager.saveData({
-														hash : hash,
-														data : data
-													});
-												}
-											});
-											
-											// 노드에 없는 데이터면 삭제
-											EACH(dataSet, (data, hash) => {
-												if (nodeDataSet[hash] === undefined) {
-													dataManager.removeData({
-														storeName : storeName,
-														hash : hash
-													});
-												}
-											});
-										});
-									}
-								}
-							});
-						});
+						syncDataStore(storeName, fastestSend);
 					});
 				};
 			}]);
@@ -597,8 +661,159 @@ DSide.Node = CLASS((cls) => {
 					
 					connectionTimes = {};
 					
-					//TODO: 데이터 통합 기능
+					// 데이터 통합
 					
+					// 토큰 데이터 통합
+					let tokenStoreHash = DSide.Data.TokenStore.getHash();
+					
+					let hashWeights = {};
+					hashWeights[tokenStoreHash] = DSide.Data.TokenStore.getBalance(accountAddress);
+					
+					let hashNodes = {};
+					hashNodes[tokenStoreHash] = [];
+					
+					PARALLEL(nodes,
+					(node, done) => {
+						
+						let isDone = false;
+						
+						// 토큰 스토어 싱크
+						node.send('getTokenStoreHash', (hash) => {
+							
+							if (isDone !== true) {
+								
+								if (hashWeights[hash] === undefined) {
+									hashWeights[hash] = 0;
+								}
+								
+								if (hashNodes[hash] === undefined) {
+									hashNodes[hash] = [];
+								}
+								
+								hashWeights[hash] += DSide.Data.TokenStore.getBalance(node.accountAddress);
+								
+								hashNodes[hash].push(node);
+								
+								done();
+								isDone = true;
+							}
+						});
+						
+						// 타임아웃 5초
+						DELAY(5, () => {
+							if (isDone !== true) {
+								done();
+								isDone = true;
+							}
+						});
+					},
+					
+					() => {
+						
+						let maxWeight = -1;
+						let maxWeightHash;
+						
+						EACH(hashWeights, (hash, weight) => {
+							
+							if (maxWeight < weight) {
+								weight = maxWeight;
+								maxWeightHash = hash;
+							}
+						});
+						
+						syncTokenStore((params, callback) => {
+							
+							EACH(hashNodes[maxWeightHash], (node) => {
+								if (CHECK_IS_IN({
+									array : nodes,
+									value : node
+								}) === true) {
+									
+									node.send(params, callback);
+									return false;
+								}
+							});
+						});
+					});
+					
+					// 모든 데이터 통합
+					EACH(dataStructures, (dataStructure, storeName) => {
+						
+						let storeHash = dataManager.getStoreHash(storeName);
+						
+						let hashWeights = {};
+						hashWeights[storeHash] = DSide.Data.TokenStore.getBalance(accountAddress);
+						
+						let hashNodes = {};
+						hashNodes[storeHash] = [];
+						
+						PARALLEL(nodes,
+						(node, done) => {
+							
+							let isDone = false;
+							
+							// 데이터 스토어 싱크
+							node.send({
+								methodName : 'getStoreHash',
+								data : storeName
+							}, (hash) => {
+								
+								if (isDone !== true) {
+									
+									if (hashWeights[hash] === undefined) {
+										hashWeights[hash] = 0;
+									}
+									
+									if (hashNodes[hash] === undefined) {
+										hashNodes[hash] = [];
+									}
+									
+									hashWeights[hash] += DSide.Data.TokenStore.getBalance(node.accountAddress);
+									
+									hashNodes[hash].push(node);
+									
+									done();
+									isDone = true;
+								}
+							});
+							
+							// 타임아웃 5초
+							DELAY(5, () => {
+								if (isDone !== true) {
+									done();
+									isDone = true;
+								}
+							});
+						},
+						
+						() => {
+							
+							let maxWeight = -1;
+							let maxWeightHash;
+							
+							EACH(hashWeights, (hash, weight) => {
+								
+								if (maxWeight < weight) {
+									weight = maxWeight;
+									maxWeightHash = hash;
+								}
+							});
+							
+							syncDataStore(storeName, (params, callback) => {
+								
+								EACH(hashNodes[maxWeightHash], (node) => {
+									if (CHECK_IS_IN({
+										array : nodes,
+										value : node
+									}) === true) {
+										
+										node.send(params, callback);
+										return false;
+									}
+								});
+							});
+						});
+					});
 				}
 			});
 		}
