@@ -86,21 +86,6 @@ DSide('Data').TokenStore = OBJECT({
 			});
 		};
 		
-		// 초기화 토큰량보다 부족한 계정에 토큰을 충전합니다.
-		let charge = self.charge = () => {
-			
-			EACH(accounts, (amount, address) => {
-				
-				if (amount < INIT_TOKEN_AMOUNT) {
-					
-					// 계정을 삭제하면 다음에 계정을 생성할 때 초기화 토큰량으로 초기화됨
-					delete accounts[address];
-					
-					isToSave = true;
-				}
-			});
-		};
-		
 		let increaseToken = self.increaseToken = (params) => {
 			//REQUIRED: params
 			//REQUIRED: params.address
@@ -123,6 +108,36 @@ DSide('Data').TokenStore = OBJECT({
 			}
 			
 			return false;
+		};
+		
+		// 초기화 토큰량보다 부족한 계정에 토큰을 충전합니다.
+		let chargeLacks = self.chargeLacks = () => {
+			
+			EACH(accounts, (amount, address) => {
+				
+				if (amount < INIT_TOKEN_AMOUNT) {
+					
+					// 계정을 삭제하면 다음에 계정을 생성할 때 초기화 토큰량으로 초기화됨
+					delete accounts[address];
+					
+					isToSave = true;
+				}
+			});
+		};
+		
+		// 노드의 보상을 충전합니다.
+		let chargeNodeReward = self.chargeNodeReward = (params) => {
+			//REQUIRED: params
+			//REQUIRED: params.address
+			//REQUIRED: params.connectionTime
+			
+			let address = params.address;
+			let connectionTime = params.connectionTime;
+			
+			increaseToken({
+				address : address,
+				amount : connectionTime / 1000 / 60 / 60 * INIT_TOKEN_AMOUNT
+			});
 		};
 		
 		// 10초에 한번씩 데이터 저장

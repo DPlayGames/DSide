@@ -6,7 +6,7 @@ DSide.Node = CLASS((cls) => {
 		// 국제 표준시
 		let now = new Date();
 		
-		return now.getTime() + now.getTimezoneOffset() * 60000
+		return now.getTime() + now.getTimezoneOffset() * 60000;
 	};
 	
 	return {
@@ -34,8 +34,10 @@ DSide.Node = CLASS((cls) => {
 			// 초기 연결할 IP들
 			let initIps = params.ips;
 			
-			// 실제로 연결된 IP들
-			let ips;
+			// 실제로 연결된 IP들의 정보
+			let ipInfos;
+			
+			let connectionTimes = {};
 			
 			// 다른 노드가 연결할 서버를 생성합니다.
 			MULTI_PROTOCOL_SOCKET_SERVER({
@@ -44,13 +46,44 @@ DSide.Node = CLASS((cls) => {
 			}, (clientInfo, on, off, send, disconnect) => {
 				
 				// 접속한 클라이언트의 IP를 반환합니다.
-				on('getClientIp', (notUsing, ret) => {
+				on('getClientIp', (ip, ret) => {
+					
+					// 초기 노드면 최초 접근 시간을 저장합니다.
+					if (ipInfos === undefined) {
+						ipInfos = {};
+						ipInfos[ip] = {
+							connectTime : new Date(),
+							accountAddress : accountAddress
+						};
+					}
+					
 					ret(clientInfo.ip);
 				});
 				
 				// 노드가 연결됩니다.
-				on('connectNode', (notUsing, ret) => {
-					ips.push(clientInfo.ip);
+				on('connectNode', (accountAddress, ret) => {
+					
+					if (ipInfos !== undefined) {
+						
+						ipInfos[clientInfo.ip] = {
+							connectTime : new Date(),
+							accountAddress : accountAddress
+						};
+						
+						on('__DISCONNECTED', () => {
+							
+							if (ipInfos[clientInfo.ip] !== undefined) {
+								
+								if (connectionTimes[accountAddress] === undefined) {
+									connectionTimes[accountAddress] = 0;
+								}
+								
+								connectionTimes[accountAddress] += Date.now() - ipInfos[clientInfo.ip].connectionTime.getTime();
+								
+								delete ipInfos[clientInfo.ip];
+							}
+						});
+					}
 				});
 				
 				// 노드의 버전을 반환합니다.
@@ -63,10 +96,11 @@ DSide.Node = CLASS((cls) => {
 					ret(getNowUTC());
 				});
 				
-				// 실제로 연결된 IP들을 반환합니다.
-				// 없는 경우 초기 연결할 IP들을 반환합니다.
-				on('getIps', (notUsing, ret) => {
-					ret(ips === undefined ? initIps : ips);
+				// 실제로 연결된 IP들의 정보를 반환합니다.
+				on('getIpInfos', (notUsing, ret) => {
+					if (ipInfos !== undefined) {
+						ret(ipInfos);
+					}
 				});
 				
 				// 데이터 저장소의 Hash를 반환합니다.
@@ -284,6 +318,8 @@ DSide.Node = CLASS((cls) => {
 			NEXT([
 			(next) => {
 				
+				let isInitConnected = false;
+				
 				// 우선 모든 IP들에 연결을 시도합니다.
 				EACH(initIps, (ip) => {
 					
@@ -296,10 +332,23 @@ DSide.Node = CLASS((cls) => {
 						},
 						success : (on, off, send, disconnect) => {
 							
-							send('getClientIp', (clientIp) => {
+							// 내 IP를 가져옵니다.
+							send({
+								methodName : 'getClientIp',
+								data : ip
+							}, (clientIp) => {
 								
-								if (ips === undefined) {
-									next(clientIp, send, disconnect);
+								// 내 스스로에는 연결 금지
+								if (ip !== clientIp) {
+									
+									if (isInitConnected !== true) {
+										next(clientIp, send, disconnect);
+										isInitConnected = true;
+									}
+									
+									else {
+										disconnect();
+									}
 								}
 								
 								else {
@@ -314,15 +363,16 @@ DSide.Node = CLASS((cls) => {
 			(next) => {
 				return (clientIp, send, disconnect) => {
 					
-					// 내 스스로에는 연결 금지
-					if (ip !== clientIp) {
+					// 실제로 연결된 IP들의 정보를 가져옵니다.
+					send('getIpInfos', (_ipInfos) => {
 						
-						// 실제로 연결된 IP 목록들을 가져옵니다.
-						send('getIps', (_ips) => {
-							ips = _ips;
+						ipInfos = _ipInfos;
+						
+						// 노드들을 찾습니다.
+						EACH(ipInfos, (info, ip) => {
 							
-							// 노드들을 찾습니다.
-							EACH(ips, (ip) => {
+							// 내 스스로에는 연결 금지
+							if (ip !== clientIp) {
 								
 								CONNECT_TO_SOCKET_SERVER({
 									host : ip,
@@ -348,7 +398,10 @@ DSide.Node = CLASS((cls) => {
 												// 빠르게 접속된 순서대로 저장
 												nodes.push(node);
 												
-												node.send('connectNode');
+												node.send({
+													methodName : 'connectNode',
+													data : accountAddress
+												});
 												
 												// 첫 노드를 찾은 순간부터 데이터 싱크
 												if (nodes.length === 1) {
@@ -369,19 +422,22 @@ DSide.Node = CLASS((cls) => {
 										});
 									}
 								});
-							});
+							}
 							
-							// 현재 클라이언트 IP를 추가
-							ips.push(clientIp);
-							
-							// 실제로 연결된 IP 목록들을 가져온 후에는 접속 종료
-							disconnect();
+							else {
+								disconnect();
+							}
 						});
-					}
-					
-					else {
+						
+						// 현재 클라이언트 IP 정보를 추가
+						ipInfos[clientIp] = {
+							connectTime : new Date(),
+							accountAddress : accountAddress
+						};
+						
+						// 실제로 연결된 IP 목록들을 가져온 후에는 접속 종료
 						disconnect();
-					}
+					});
 				};
 			},
 			
@@ -518,7 +574,28 @@ DSide.Node = CLASS((cls) => {
 				if (nowCal.getHour() === 0 && nowCal.getMinute() === 0 && nowCal.getSecond() === 0) {
 					
 					// 토큰 충전
-					DSide.Data.TokenStore.charge();
+					DSide.Data.TokenStore.chargeLacks();
+					
+					// 접속 시간에 따라 토큰 충전
+					EACH(ipInfos, (info, ip) => {
+						
+						if (connectionTimes[info.accountAddress] === undefined) {
+							connectionTimes[info.accountAddress] = 0;
+						}
+						
+						connectionTimes[info.accountAddress] += Date.now() - info.connectionTime.getTime();
+						
+						info.connectionTime = new Date();
+					});
+					
+					EACH(connectionTimes, (connectionTime, accountAddress) => {
+						DSide.Data.TokenStore.chargeNodeReward({
+							address : accountAddress,
+							connectionTime : connectionTime
+						});
+					});
+					
+					connectionTimes = {};
 					
 					//TODO: 데이터 통합 기능
 					
