@@ -38,11 +38,12 @@ DSide.Connect = METHOD({
 				success : (on, off, send, disconnect) => {
 					
 					// 실제로 연결된 IP 목록들을 가져옵니다.
-					send('getIps', (_ips) => {
-						ips = _ips;
+					send('getIpInfos', (result) => {
+						
+						ipInfos = result.ipInfos;
 						
 						// 노드들을 찾습니다.
-						EACH(ips, (ip) => {
+						EACH(ipInfos, (info, ip) => {
 							
 							CONNECT_TO_WEB_SOCKET_SERVER({
 								host : ip,

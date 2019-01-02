@@ -76,7 +76,7 @@ DSide('Data').DataManager = CLASS({
 			
 			let store = stores[storeName];
 			
-			store.saveData({
+			return store.saveData({
 				target : target,
 				hash : hash,
 				data : data
@@ -123,7 +123,7 @@ DSide('Data').DataManager = CLASS({
 			
 			let store = stores[storeName];
 			
-			store.updateData({
+			return store.updateData({
 				target : target,
 				hash : hash,
 				data : data
@@ -143,11 +143,11 @@ DSide('Data').DataManager = CLASS({
 			let store = stores[storeName];
 			
 			if (target === undefined) {
-				store.removeData(hash);
+				return store.removeData(hash);
 			}
 			
 			else {
-				store.removeData({
+				return store.removeData({
 					target : target,
 					hash : hash
 				});

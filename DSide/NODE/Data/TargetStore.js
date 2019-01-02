@@ -80,7 +80,7 @@ DSide('Data').TargetStore = CLASS({
 				let hash = params.hash;
 				let data = params.data;
 				
-				let validResult = checkValid(data);
+				let validResult = self.checkValid(data);
 				
 				if (validResult.isValid === true) {
 					
@@ -169,7 +169,7 @@ DSide('Data').TargetStore = CLASS({
 				let hash = params.hash;
 				let data = params.data;
 				
-				let validResult = checkValid(data);
+				let validResult = self.checkValid(data);
 				
 				if (validResult.isValid === true) {
 					
