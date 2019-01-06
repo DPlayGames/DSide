@@ -67,9 +67,11 @@ DSide('Data').DataManager = CLASS({
 			//REQUIRED: params.data
 			//REQUIRED: params.data.storeName
 			//OPTIONAL: params.data.target
+			//OPTIONAL: params.isForSync
 			
 			let hash = params.hash;
 			let data = params.data;
+			let isForSync = params.isForSync;
 			
 			let storeName = data.storeName;
 			let target = data.target;
@@ -79,7 +81,8 @@ DSide('Data').DataManager = CLASS({
 			return store.saveData({
 				target : target,
 				hash : hash,
-				data : data
+				data : data,
+				isForSync : isForSync
 			});
 		};
 		

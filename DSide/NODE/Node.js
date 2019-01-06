@@ -131,8 +131,10 @@ DSide.Node = CLASS((cls) => {
 					//OPTIONAL: params.data.target
 					//REQUIRED: params.data.address
 					//REQUIRED: params.data.createTime
+					//OPTIONAL: params.isFromNode
 					
 					let data = params.data;
+					let isFromNode = params.isFromNode;
 					
 					let createTime = data.createTime;
 					
@@ -143,7 +145,10 @@ DSide.Node = CLASS((cls) => {
 						let result = dataManager.saveData(params);
 						
 						// 성공적으로 저장되면 모든 노드에 전파
-						if (result.savedData !== undefined) {
+						if (isFromNode !== true && result.savedData !== undefined) {
+							
+							params.isFromNode = true;
+							
 							EACH(nodes, (node) => {
 								node.send({
 									methodName : 'saveData',
@@ -183,11 +188,13 @@ DSide.Node = CLASS((cls) => {
 					//REQUIRED: params.data.address
 					//REQUIRED: params.data.createTime
 					//REQUIRED: params.data.lastUpdateTime
+					//OPTIONAL: params.isFromNode
 					
 					let originHash = params.originHash;
 					let signature = params.signature;
 					let hash = params.hash;
 					let data = params.data;
+					let isFromNode = params.isFromNode;
 					
 					let address = data.address;
 					let lastUpdateTime = data.lastUpdateTime;
@@ -205,7 +212,10 @@ DSide.Node = CLASS((cls) => {
 							let result = dataManager.updateData(params);
 							
 							// 성공적으로 수정되면 모든 노드에 전파
-							if (result.savedData !== undefined) {
+							if (isFromNode !== true && result.savedData !== undefined) {
+								
+								params.isFromNode = true;
+								
 								EACH(nodes, (node) => {
 									node.send({
 										methodName : 'updateData',
@@ -239,12 +249,14 @@ DSide.Node = CLASS((cls) => {
 					//REQUIRED: params.hash
 					//REQUIRED: params.signature
 					//REQUIRED: params.address
+					//OPTIONAL: params.isFromNode
 					
 					let storeName = params.storeName;
 					let target = params.target;
 					let hash = params.hash;
 					let signature = params.signature;
 					let address = params.address;
+					let isFromNode = params.isFromNode;
 					
 					// 데이터 작성자인지 검증합니다.
 					if (DSide.Data.Verify({
@@ -256,7 +268,10 @@ DSide.Node = CLASS((cls) => {
 						let result = dataManager.removeData(params);
 						
 						// 성공적으로 삭제되면 모든 노드에 전파
-						if (result.originData !== undefined) {
+						if (isFromNode !== true && result.originData !== undefined) {
+							
+							params.isFromNode = true;
+							
 							EACH(nodes, (node) => {
 								node.send({
 									methodName : 'removeData',
@@ -289,11 +304,17 @@ DSide.Node = CLASS((cls) => {
 					//REQUIRED: params.hash
 					//REQUIRED: params.to
 					//REQUIRED: params.amount
+					//OPTIONAL: params.isFromNode
+					
+					let isFromNode = params.isFromNode;
 					
 					if (DSide.Data.TokenStore.transfer(params) === true) {
 						
 						// 성공적으로 이체하면 모든 노드에 전파
-						if (result.originData !== undefined) {
+						if (isFromNode !== true && result.originData !== undefined) {
+							
+							params.isFromNode = true;
+							
 							EACH(nodes, (node) => {
 								node.send({
 									methodName : 'transferToken',
@@ -397,7 +418,8 @@ DSide.Node = CLASS((cls) => {
 												if (dataSet[hash] === undefined) {
 													dataManager.saveData({
 														hash : hash,
-														data : data
+														data : data,
+														isForSync : true
 													});
 												}
 											});
@@ -442,7 +464,8 @@ DSide.Node = CLASS((cls) => {
 									if (dataSet[hash] === undefined) {
 										dataManager.saveData({
 											hash : hash,
-											data : data
+											data : data,
+											isForSync : true
 										});
 									}
 								});

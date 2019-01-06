@@ -17,7 +17,11 @@ DSide('Data').TargetStore = CLASS({
 		return DSide.Data.Store;
 	},
 	
-	init : (inner, self) => {
+	init : (inner, self, params) => {
+		//REQUIRED: params
+		//REQUIRED: params.storeName
+		
+		let storeName = params.storeName;
 		
 		let dataSet = self.getDataSet();
 		
@@ -76,9 +80,11 @@ DSide('Data').TargetStore = CLASS({
 				//REQUIRED: params.data
 				//REQUIRED: params.data.target
 				//REQUIRED: params.data.account
+				//OPTIONAL: params.isForSync
 				
 				let hash = params.hash;
 				let data = params.data;
+				let isForSync = params.isForSync;
 				
 				let validResult = self.checkValid(data);
 				
@@ -95,7 +101,7 @@ DSide('Data').TargetStore = CLASS({
 					}) === true) {
 						
 						// 1 토큰 소비
-						if (DSide.Data.TokenStore.useToken({
+						if (isForSync === true || DSide.Data.TokenStore.useToken({
 							address : address,
 							amount : 1
 						}) === true) {

@@ -89,9 +89,11 @@ DSide('Data').Store = CLASS((cls) => {
 				//REQUIRED: params.hash
 				//REQUIRED: params.data
 				//REQUIRED: params.data.account
+				//OPTIONAL: params.isForSync
 				
 				let hash = params.hash;
 				let data = params.data;
+				let isForSync = params.isForSync;
 				
 				let validResult = checkValid(data);
 				
@@ -100,7 +102,7 @@ DSide('Data').Store = CLASS((cls) => {
 					let address = data.address;
 					
 					// 데이터를 저장하기 전 검증합니다.
-					if (data.createTime !== undefined && data.lastUpdateTime === undefined && DSide.Data.Verify({
+					if (isForSync === true || data.createTime !== undefined && data.lastUpdateTime === undefined && DSide.Data.Verify({
 						signature : hash,
 						address : address,
 						data : data

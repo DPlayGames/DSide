@@ -33,6 +33,8 @@ DSide('Data').TokenStore = OBJECT({
 		let getBalance = self.getBalance = (address) => {
 			//REQUIRED: address
 			
+			address = address.toLowerCase();
+			
 			return accounts[address] !== undefined ? accounts[address] : INIT_TOKEN_AMOUNT;
 		};
 		
@@ -47,6 +49,8 @@ DSide('Data').TokenStore = OBJECT({
 			let hash = params.hash;
 			let to = params.to;
 			let amount = params.amount;
+			
+			address = address.toLowerCase();
 			
 			if (
 				DSide.Data.Verify({
@@ -86,6 +90,8 @@ DSide('Data').TokenStore = OBJECT({
 			let address = params.address;
 			let amount = params.amount;
 			
+			address = address.toLowerCase();
+			
 			return increaseToken({
 				address : address,
 				amount : -amount
@@ -99,6 +105,8 @@ DSide('Data').TokenStore = OBJECT({
 			
 			let address = params.address;
 			let amount = params.amount;
+			
+			address = address.toLowerCase();
 			
 			if (getBalance(address) + amount >= 0) {
 				
@@ -118,6 +126,8 @@ DSide('Data').TokenStore = OBJECT({
 		
 		// 계정 삭제
 		let removeAccount = self.removeAccount = (address) => {
+			
+			address = address.toLowerCase();
 			
 			delete accounts[address];
 			
@@ -145,6 +155,8 @@ DSide('Data').TokenStore = OBJECT({
 			
 			let address = params.address;
 			let connectionTime = params.connectionTime;
+			
+			address = address.toLowerCase();
 			
 			increaseToken({
 				address : address,
