@@ -826,7 +826,7 @@ DSide.Node = CLASS((cls) => {
 							let maxWeight = -1;
 							let maxWeightHash;
 							
-							EACH(hashWeights, (hash, weight) => {
+							EACH(hashWeights, (weight, hash) => {
 								
 								if (maxWeight < weight) {
 									weight = maxWeight;
