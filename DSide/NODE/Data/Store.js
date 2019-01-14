@@ -6,7 +6,12 @@ DSide('Data').Store = CLASS((cls) => {
 	let generateHash = cls.generateHash = (data) => {
 		//REQUIRED: data
 		
-		return '0x' + ETHUtil.keccak256(STRINGIFY(data)).toString('hex');
+		let sortedData = {};
+		Object.keys(data).sort().forEach((key) => {
+			sortedData[key] = data[key];
+		});
+		
+		return '0x' + ETHUtil.keccak256(STRINGIFY(sortedData)).toString('hex');
 	};
 	
 	return {
