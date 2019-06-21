@@ -160,6 +160,8 @@ DSide('Data').TokenStore = OBJECT({
 			
 			increaseToken({
 				address : address,
+				
+				// 하루 최대 480 토큰을 지급 받습니다.
 				amount : INTEGER(connectionTime / 1000 / 60 / 60 * INIT_TOKEN_AMOUNT)
 			});
 		};
