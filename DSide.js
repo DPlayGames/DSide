@@ -10,11 +10,6 @@ BOOT({
 	},
 	
 	NODE_CONFIG : {
-		isSingleCoreMode : true,
-		
-		DPlay : {
-			// Kovan 테스트넷에 접속
-			network : 'Kovan'
-		}
+		isSingleCoreMode : true
 	}
 });
