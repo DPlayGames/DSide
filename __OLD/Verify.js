@@ -1,6 +1,6 @@
 DSide.Verify = METHOD((m) => {
 	
-	const ETHUtil = require('ethereumjs-util');
+	const EthereumUtil = require('ethereumjs-util');
 	
 	return {
 	
@@ -25,17 +25,17 @@ DSide.Verify = METHOD((m) => {
 				str = data;
 			}
 			
-			let signatureData = ETHUtil.fromRpcSig(signature);
+			let signatureData = EthereumUtil.fromRpcSig(signature);
 			
 			let message = Buffer.from(str);
 			let prefix = Buffer.from('\x19Ethereum Signed Message:\n');
-			let prefixedMsg = ETHUtil.keccak256(
+			let prefixedMsg = EthereumUtil.keccak256(
 				Buffer.concat([prefix, Buffer.from(String(message.length)), message])
 			);
 			
-			let pub = ETHUtil.ecrecover(prefixedMsg, signatureData.v, signatureData.r, signatureData.s);
+			let pub = EthereumUtil.ecrecover(prefixedMsg, signatureData.v, signatureData.r, signatureData.s);
 			
-			return address.toLowerCase() === ETHUtil.bufferToHex(ETHUtil.pubToAddress(pub));
+			return address.toLowerCase() === EthereumUtil.bufferToHex(EthereumUtil.pubToAddress(pub));
 		}
 	};
 });
