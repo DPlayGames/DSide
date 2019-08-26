@@ -5,8 +5,9 @@ BOOT({
 		defaultBoxName : 'DSide',
 		isDevMode : true,
 		
-		webServerPort : 8814,
-		sockerServerPort : 8815
+		DSide : {
+			port : 8814
+		}
 	},
 	
 	NODE_CONFIG : {
