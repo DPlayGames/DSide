@@ -28,6 +28,21 @@ DSide.Node = OBJECT((cls) => {
 				let loginToken;
 				let signedAccountId;
 				
+				// 모든 사용자들에게 전파합니다.
+				let broadcast = (methodName, data) => {
+					EACH(sendToClients, (sendToClient) => {
+						
+						// 현재 클라이언트는 제외
+						if (sendToClient !== send) {
+							
+							sendToClient({
+								methodName : methodName,
+								data : data
+							});
+						}
+					});
+				};
+				
 				// 접속한 클라이언트의 IP를 반환합니다.
 				on('getClientIp', (notUsing, ret) => {
 					ret(clientInfo.ip);
@@ -74,16 +89,23 @@ DSide.Node = OBJECT((cls) => {
 				});
 				
 				// 채팅 메시지를 저장합니다.
-				on('saveChatMessage', (params) => {
-					/*
-					let senderId = params.senderId;
-					let message = params.message;
+				on('sendChatMessage', (message) => {
 					
-					DSide.ChatStore.saveMessage({
-						senderId : senderId,
-						message : message
-					});
-					*/
+					if (signedAccountId !== undefined && message !== undefined) {
+						
+						message = String(message).trim();
+						
+						if (message !== '') {
+							
+							// 모든 사용자들에게 전파합니다.
+							broadcast('newChatMessage', {
+								senderId : signedAccountId,
+								//TODO: 추후 이름 기능 추가
+								//senderName : ,
+								message : message
+							});
+						}
+					}
 				});
 				
 				// 채팅 메시지들을 가져옵니다.
