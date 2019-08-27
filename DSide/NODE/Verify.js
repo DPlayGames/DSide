@@ -6,13 +6,13 @@ DSide.Verify = METHOD((m) => {
 	
 		run : (params) => {
 			//REQUIRED: params
-			//REQUIRED: params.signature
-			//REQUIRED: params.address
+			//REQUIRED: params.accountId
 			//REQUIRED: params.data
+			//REQUIRED: params.hash
 			
-			let signature = params.signature;
-			let address = params.address;
+			let accountId = params.accountId;
 			let data = params.data;
+			let hash = params.hash;
 			
 			let str;
 			if (CHECK_IS_DATA(data) === true) {
@@ -25,7 +25,7 @@ DSide.Verify = METHOD((m) => {
 				str = data;
 			}
 			
-			let signatureData = EthereumUtil.fromRpcSig(signature);
+			let hashData = EthereumUtil.fromRpcSig(hash);
 			
 			let message = Buffer.from(str);
 			let prefix = Buffer.from('\x19Ethereum Signed Message:\n');
@@ -33,9 +33,9 @@ DSide.Verify = METHOD((m) => {
 				Buffer.concat([prefix, Buffer.from(String(message.length)), message])
 			);
 			
-			let pub = EthereumUtil.ecrecover(prefixedMsg, signatureData.v, signatureData.r, signatureData.s);
+			let pub = EthereumUtil.ecrecover(prefixedMsg, hashData.v, hashData.r, hashData.s);
 			
-			return address.toLowerCase() === EthereumUtil.bufferToHex(EthereumUtil.pubToAddress(pub));
+			return accountId.toLowerCase() === EthereumUtil.bufferToHex(EthereumUtil.pubToAddress(pub));
 		}
 	};
 });
