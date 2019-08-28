@@ -1,5 +1,7 @@
 DSide.Node = OBJECT((cls) => {
 	
+	const HARD_CODED_URLS = ['localhost:8814'];
+	
 	// 현재 국제 표준시를 밀리세컨드 단위로
 	let getNowUTC = () => {
 		
@@ -50,7 +52,7 @@ DSide.Node = OBJECT((cls) => {
 				
 				// 실제로 연결된 노드 URL 목록을 반환합니다.
 				on('getNodeURLs', (notUsing, ret) => {
-					ret(nodeURLs.length === 0 ? DSide.URLS : nodeURLs);
+					ret(nodeURLs.length === 0 ? HARD_CODED_URLS : nodeURLs);
 				});
 				
 				// 노드의 버전을 반환합니다.
@@ -137,7 +139,7 @@ DSide.Node = OBJECT((cls) => {
 				let isSomeNodeConnected = false;
 				
 				// 우선 하드코딩된 노드들의 URL에 연결을 시도합니다.
-				EACH(DSide.URLS, (url) => {
+				EACH(HARD_CODED_URLS, (url) => {
 					
 					let splits = url.split(':');
 					let host = splits[0];

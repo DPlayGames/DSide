@@ -1,1 +1,0 @@
-DSide.URLS = ['localhost:8814'];
