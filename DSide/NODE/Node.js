@@ -21,6 +21,9 @@ DSide.Node = OBJECT((cls) => {
 			// 실제로 연결된 노드 URL 목록
 			let nodeURLs = [];
 			
+			// 모든 노드들의 send 함수
+			let sendToNodes = {};
+			
 			// 모든 클라이언트들의 send 함수
 			let sendToClients = [];
 			
@@ -63,6 +66,20 @@ DSide.Node = OBJECT((cls) => {
 				// 노드의 현재 시간을 반환합니다.
 				on('getNodeTime', (notUsing, ret) => {
 					ret(getNowUTC());
+				});
+				
+				// 노드끼리 서로 연결합니다.
+				on('connectNode', (params, ret) => {
+					
+					if (params !== undefined) {
+						
+						let port = params.port;
+						let accountId = params.accountId;
+						
+						if (port !== undefined && accountId !== undefined) {
+							connectToNode(clientInfo.ip + ':' + port);
+						}
+					}
 				});
 				
 				// 로그인 토큰을 생성합니다.
@@ -124,10 +141,76 @@ DSide.Node = OBJECT((cls) => {
 				});
 			});
 			
+			// 모든 저장소의 싱크를 맞춥니다.
+			let syncStores = () => {
+				
+				// 단일 저장소들의 싱크를 맞춥니다.
+				EACH(DSide.Store.getAllStores(), (store) => {
+					
+					
+				});
+				
+				// 타겟이 존재하는 저장소들의 싱크를 맞춥니다.
+				EACH(DSide.TargetStore.getAllStores(), (store) => {
+					
+					
+				});
+			};
+			
 			// 다른 노드에 연결합니다.
 			let connectToNode = (url, callback) => {
 				
-				//TODO:
+				if (
+				
+				// 현재 노드와는 연결하지 않습니다.
+				url !== thisNodeURL &&
+				
+				// 이미 연결되어있는 경우 연결하지 않습니다.
+				sendToNodes[url] === undefined) {
+					
+					let splits = url.split(':');
+					
+					CONNECT_TO_WEB_SOCKET_SERVER({
+						host : splits[0],
+						port : INTEGER(splits[1])
+					}, {
+						error : () => {
+							// 연결 오류를 무시합니다.
+						},
+						success : (on, off, send, disconnect) => {
+							
+							send('getVersion', (version) => {
+								
+								// 버전이 같아야합니다.
+								if (version === CONFIG.DSide.version) {
+									
+									// 서로 연결합니다.
+									send({
+										methodName : 'connectNode',
+										data : {
+											port : CONFIG.DSide.port,
+											accountId : CONFIG.DSide.accountId
+										}
+									});
+									
+									sendToNodes[url] = send;
+									
+									on('__DISCONNECTED', () => {
+										delete sendToNodes[url];
+									});
+									
+									if (callback !== undefined) {
+										callback();
+									}
+								}
+								
+								else {
+									disconnect();
+								}
+							});
+						}
+					});
+				}
 			};
 			
 			// 노드를 찾고 연결합니다.
@@ -167,14 +250,14 @@ DSide.Node = OBJECT((cls) => {
 									clientIp !== 'localhost') {
 										
 										// 실제로 연결된 노드 URL 목록을 가져옵니다.
-										send('getNodeURLs', (urls) => {
+										send('getNodeURLs', (nodeURLs) => {
 											
 											if (isSomeNodeConnected !== true) {
 												
 												// 현재 노드의 URL을 설정합니다.
 												thisNodeURL = clientIp + ':' + CONFIG.DSide.port;
 												
-												next(urls);
+												next(nodeURLs);
 												
 												isSomeNodeConnected = true;
 											}
@@ -198,35 +281,43 @@ DSide.Node = OBJECT((cls) => {
 			},
 			
 			// 최초 접속 노드로부터 모든 노드의 URL 목록을 가져와 연결합니다.
-			(next) => {
-				return (urls) => {
+			() => {
+				return (nodeURLs) => {
+					
+					let isFoundFastestNode;
 					
 					// 모든 노드들에 연결합니다.
-					EACH(urls, (url) => {
+					EACH(nodeURLs, (url) => {
 						
-						// 현재 노드와는 연결하지 않습니다.
-						if (url !== thisNodeURL) {
+						connectToNode(url, () => {
 							
-							connectToNode(url, (node) => {
+							// 가장 빠른 노드를 찾았습니다.
+							if (isFoundFastestNode !== true) {
 								
-								// 가장 빠른 노드와 데이터 싱크를 수행합니다.
-								if (fastestNode === undefined) {
-									fastestNode = node;
-									next(fastestNode);
-								}
-							});
-						}
+								// 가장 빠른 노드와 모든 저장소의 싱크를 맞춥니다.
+								syncStores();
+								
+								isFoundFastestNode = true;
+							}
+						});
 					});
 				};
-			},
-			
-			// 가장 빠른 노드와 데이터 싱크를 수행합니다.
-			() => {
-				return (fastestNode) => {
-					
-					//TODO:
-				};
 			}]);
+			
+			// 하루에 한 번 토큰을 지급하고, 모든 저장소의 싱크를 맞춥니다.
+			INTERVAL(1, RAR(() => {
+				
+				let nowCal = CALENDAR(new Date(getNowUTC()));
+				
+				// 자정이 되면 실행
+				if (nowCal.getHour() === 0 && nowCal.getMinute() === 0 && nowCal.getSecond() === 0) {
+					
+					//TODO 토큰 지급하기
+					
+					// 토큰을 지급하고 다른 네트워크에서 토큰들을 지급하기까지 5초간 대기한 후, 모든 저장소의 싱크를 맞춥니다.
+					DELAY(5, syncStores);
+				}
+			}));
 		}
 	};
 });

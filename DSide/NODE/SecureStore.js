@@ -1,45 +1,30 @@
-// 데이터를 저장하는 스토어
-DSide.Store = CLASS((cls) => {
+DSide.SecureStore = CLASS((cls) => {
 	
-	const ETHUtil = require('ethereumjs-util');
+	let stores = [];
 	
-	let generateHash = cls.generateHash = (data) => {
-		//REQUIRED: data
-		
-		let sortedData = {};
-		Object.keys(data).sort().forEach((key) => {
-			sortedData[key] = data[key];
-		});
-		
-		return '0x' + ETHUtil.keccak256(STRINGIFY(sortedData)).toString('hex');
+	let getAllStores = cls.getAllStores = () => {
+		return stores;
 	};
 	
 	return {
 		
 		preset : (params) => {
 			//REQUIRED: params
-			//REQUIRED: params.structure
+			//REQUIRED: params.dataStructure
 			
-			let structure = params.structure;
+			let dataStructure = params.dataStructure;
 			
-			structure.storeName = {
-				notEmpty : true,
-				size : {
-					max : 256
-				}
-			};
-			
-			structure.address = {
+			dataStructure.accountId = {
 				notEmpty : true,
 				size : 42
 			};
 			
-			structure.createTime = {
+			dataStructure.createTime = {
 				notEmpty : true,
 				date : true
 			};
 			
-			structure.lastUpdateTime = {
+			dataStructure.lastUpdateTime = {
 				date : true
 			};
 		},
@@ -47,18 +32,20 @@ DSide.Store = CLASS((cls) => {
 		init : (inner, self, params) => {
 			//REQUIRED: params
 			//REQUIRED: params.storeName
-			//REQUIRED: params.structure
+			//REQUIRED: params.dataStructure
 			
 			let storeName = params.storeName;
-			let structure = params.structure;
+			let dataStructure = params.dataStructure;
 			
-			let valid = VALID(structure);
+			stores.push(self);
 			
+			// 데이터 검증 오브젝트
+			let valid = VALID(dataStructure);
+			
+			// 전체 데이터 세트
 			let dataSet = {};
 			
-			let isToSave = false;
-			
-			// 이미 저장된 데이터들을 불러옵니다.
+			// 저장되어있는 데이터들을 불러옵니다.
 			READ_FILE({
 				path : 'data/' + storeName + '.json',
 				isSync : true
@@ -67,18 +54,29 @@ DSide.Store = CLASS((cls) => {
 					// ignore.
 				},
 				success : (dataSetStr) => {
+					
 					dataSet = PARSE_STR(dataSetStr.toString());
+					
+					if (dataSet === undefined) {
+						dataSet = {};
+					}
 				}
 			});
 			
+			// 변경사항이 있는지
+			let isEdited = false;
+			
+			// 모든 데이터를 가지고 만든 해쉬를 반환합니다.
 			let getHash = self.getHash = () => {
 				return generateHash(dataSet);
 			};
 			
+			// 모든 데이터를 반환합니다.
 			let getDataSet = self.getDataSet = () => {
 				return dataSet;
 			};
 			
+			// 데이터를 검증합니다.
 			let checkValid = self.checkValid = (data) => {
 				
 				let result = valid.checkAndWash(data);
@@ -89,52 +87,43 @@ DSide.Store = CLASS((cls) => {
 				};
 			};
 			
+			// 데이터를 저장합니다.
 			let saveData = self.saveData = (params) => {
 				//REQUIRED: params
-				//REQUIRED: params.hash
 				//REQUIRED: params.data
-				//REQUIRED: params.data.account
-				//OPTIONAL: params.isForSync
+				//REQUIRED: params.data.accountId
+				//REQUIRED: params.hash
 				
-				let hash = params.hash;
 				let data = params.data;
-				let isForSync = params.isForSync;
+				let hash = params.hash;
 				
 				let validResult = checkValid(data);
 				
+				// 데이터를 저장하기 전 검증합니다.
 				if (validResult.isValid === true) {
 					
-					let address = data.address;
+					let accountId = data.accountId;
+					let createTime = data.createTime;
+					let lastUpdateTime = data.lastUpdateTime;
 					
-					// 데이터를 저장하기 전 검증합니다.
-					if (isForSync === true || data.createTime !== undefined && data.lastUpdateTime === undefined && DSide.Verify({
-						signature : hash,
-						address : address,
-						data : data
+					// 데이터가 유효한지 검사합니다.
+					if (createTime !== undefined && lastUpdateTime === undefined && DSide.Verify({
+						accountId : accountId,
+						data : data,
+						hash : hash
 					}) === true) {
 						
-						// 1 토큰 소비
-						if (DSide.TokenStore.useToken({
-							address : address,
-							amount : 1
-						}) === true) {
-							
-							dataSet[hash] = data;
-							
-							isToSave = true;
-							
-							return {
-								savedData : data
-							};
-						}
+						dataSet[hash] = data;
 						
-						else {
-							return {
-								isNotEnoughToken : true
-							};
-						}
+						isEdited = true;
+						
+						// 데이터 저장 완료
+						return {
+							savedData : data
+						};
 					}
 					
+					// 유효하지 않은 데이터입니다.
 					else {
 						return {
 							isNotVerified : true
@@ -142,6 +131,7 @@ DSide.Store = CLASS((cls) => {
 					}
 				}
 				
+				// 데이터 검증에 실패했습니다.
 				else {
 					return {
 						validErrors : validResult.validErrors
@@ -149,69 +139,61 @@ DSide.Store = CLASS((cls) => {
 				}
 			};
 			
+			// 데이터를 가져옵니다.
 			let getData = self.getData = (hash) => {
 				//REQUIRED: hash
 				
 				return dataSet[hash];
 			};
 			
+			// 데이터를 수정합니다.
 			let updateData = self.updateData = (params) => {
 				//REQUIRED: params
 				//REQUIRED: params.originHash
-				//REQUIRED: params.hash
 				//REQUIRED: params.data
-				//REQUIRED: params.data.account
+				//REQUIRED: params.data.accountId
 				//REQUIRED: params.data.createTime
 				//REQUIRED: params.data.lastUpdateTime
+				//REQUIRED: params.hash
 				
 				let originHash = params.originHash;
-				let hash = params.hash;
 				let data = params.data;
+				let hash = params.hash;
 				
 				let validResult = checkValid(data);
 				
+				// 데이터를 저장하기 전 검증합니다.
 				if (validResult.isValid === true) {
 					
-					let address = data.address;
+					let accountId = data.accountId;
 					let createTime = data.createTime;
 					let lastUpdateTime = data.lastUpdateTime;
 					
 					let originData = getData(originHash);
-					
 					if (originData !== undefined) {
 						
-						// 데이터를 저장하기 전 검증합니다.
+						// 데이터가 유효한지 검사합니다.
 						if (originData.createTime === createTime && lastUpdateTime !== undefined && DSide.Verify({
-							hash : hash,
-							address : address,
-							data : data
+							accountId : accountId,
+							data : data,
+							hash : hash
 						}) === true) {
 							
-							// 1 토큰 소비
-							if (DSide.TokenStore.useToken({
-								address : address,
-								amount : 1
-							}) === true) {
-								
-								removeData(originHash);
-								
-								dataSet[hash] = data;
-								
-								isToSave = true;
-								
-								return {
-									originData : originData,
-									savedData : data
-								};
-							}
+							// 기존 데이터는 삭제합니다.
+							removeData(originHash);
 							
-							else {
-								return {
-									isNotEnoughToken : true
-								};
-							}
+							dataSet[hash] = data;
+							
+							isEdited = true;
+							
+							// 데이터 수정 완료
+							return {
+								originData : originData,
+								savedData : data
+							};
 						}
 						
+						// 유효하지 않은 데이터입니다.
 						else {
 							return {
 								isNotVerified : true
@@ -219,6 +201,7 @@ DSide.Store = CLASS((cls) => {
 						}
 					}
 					
+					// 데이터가 존재하지 않습니다.
 					else {
 						return {
 							isNotExists : true
@@ -226,6 +209,7 @@ DSide.Store = CLASS((cls) => {
 					}
 				}
 				
+				// 데이터 검증에 실패했습니다.
 				else {
 					return {
 						validErrors : validResult.validErrors
@@ -233,22 +217,24 @@ DSide.Store = CLASS((cls) => {
 				}
 			};
 			
+			// 데이터를 삭제합니다.
 			let removeData = self.removeData = (hash) => {
 				//REQUIRED: hash
 				
-				let originData = getData(originHash);
-				
+				let originData = getData(hash);
 				if (originData !== undefined) {
 					
 					delete dataSet[hash];
 					
-					isToSave = true;
+					isEdited = true;
 					
+					// 데이터 삭제 완료
 					return {
 						originData : originData
 					};
 				}
 				
+				// 데이터가 존재하지 않습니다.
 				else {
 					return {
 						isNotExists : true
@@ -256,25 +242,22 @@ DSide.Store = CLASS((cls) => {
 				}
 			};
 			
-			let setToSave = inner.setToSave = () => {
-				isToSave = true;
-			};
-			
-			// 10초에 한번씩 데이터 저장
-			DELAY(RANDOM(10), () => {
+			// 10초에 한번씩 변경사항을 확인하여, 변경사항이 있는 경우 모든 데이터를 파일로 저장합니다.
+			INTERVAL(10, () => {
 				
-				INTERVAL(10, RAR(() => {
+				// 적절히 저장 시간을 분배합니다.
+				DELAY(Math.random() * 10, () => {
 					
-					if (isToSave === true) {
+					if (isEdited === true) {
 						
 						WRITE_FILE({
 							path : 'data/' + storeName + '.json',
 							content : STRINGIFY(dataSet)
 						});
 						
-						isToSave = false;
+						isEdited = false;
 					}
-				}));
+				});
 			});
 		}
 	};
