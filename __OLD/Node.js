@@ -1,14 +1,4 @@
-DSide.Node = CLASS((cls) => {
-	
-	// 현재 국제 표준시를 밀리세컨드 단위로
-	let getNowUTC = () => {
-		
-		// 국제 표준시
-		let now = new Date();
-		
-		return now.getTime() + now.getTimezoneOffset() * 60000;
-	};
-	
+
 	return {
 		
 		init : (inner, self, params) => {

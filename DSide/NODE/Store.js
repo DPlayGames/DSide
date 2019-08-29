@@ -13,7 +13,7 @@ DSide.Store = CLASS((cls) => {
 		return '0x' + ETHUtil.keccak256(STRINGIFY(sortedData)).toString('hex');
 	};
 	
-	let stores = [];
+	let stores = {};
 	
 	let getAllStores = cls.getAllStores = () => {
 		return stores;
@@ -26,18 +26,6 @@ DSide.Store = CLASS((cls) => {
 			//REQUIRED: params.dataStructure
 			
 			let dataStructure = params.dataStructure;
-			
-			dataStructure.id = {
-				notEmpty : true,
-				size : {
-					max : 256
-				}
-			};
-			
-			dataStructure.accountId = {
-				notEmpty : true,
-				size : 42
-			};
 			
 			dataStructure.createTime = {
 				notEmpty : true,
@@ -57,7 +45,7 @@ DSide.Store = CLASS((cls) => {
 			let storeName = params.storeName;
 			let dataStructure = params.dataStructure;
 			
-			stores.push(self);
+			stores[storeName] = self;
 			
 			// 데이터 검증 오브젝트
 			let valid = VALID(dataStructure);
@@ -112,7 +100,6 @@ DSide.Store = CLASS((cls) => {
 				//REQUIRED: params
 				//REQUIRED: params.id
 				//REQUIRED: params.data
-				//REQUIRED: params.data.accountId
 				
 				let id = params.id;
 				let data = params.data;
@@ -122,12 +109,11 @@ DSide.Store = CLASS((cls) => {
 				// 데이터를 저장하기 전 검증합니다.
 				if (validResult.isValid === true) {
 					
-					let accountId = data.accountId;
 					let createTime = data.createTime;
 					let lastUpdateTime = data.lastUpdateTime;
 					
 					// 데이터가 유효한지 검사합니다.
-					if (createTime !== undefined && lastUpdateTime === undefined) {
+					if (createTime !== undefined && lastUpdateTime === undefined && dataSet[id] === undefined) {
 						
 						dataSet[id] = data;
 						
@@ -155,6 +141,33 @@ DSide.Store = CLASS((cls) => {
 				}
 			};
 			
+			// 데이터의 싱크를 맞춥니다.
+			let syncData = self.syncData = (params) => {
+				//REQUIRED: params
+				//REQUIRED: params.id
+				//REQUIRED: params.data
+				
+				let id = params.id;
+				let data = params.data;
+				
+				let validResult = checkValid(data);
+				
+				// 데이터를 저장하기 전 검증합니다.
+				if (validResult.isValid === true) {
+					
+					let createTime = data.createTime;
+					
+					// 데이터가 유효한지 검사합니다.
+					// 이 때는 수정일이 존재할 수 있습니다.
+					if (createTime !== undefined) {
+						
+						dataSet[id] = data;
+						
+						isEdited = true;
+					}
+				}
+			};
+			
 			// 데이터를 가져옵니다.
 			let getData = self.getData = (id) => {
 				//REQUIRED: id
@@ -167,7 +180,6 @@ DSide.Store = CLASS((cls) => {
 				//REQUIRED: params
 				//REQUIRED: params.id
 				//REQUIRED: params.data
-				//REQUIRED: params.data.accountId
 				//REQUIRED: params.data.createTime
 				//REQUIRED: params.data.lastUpdateTime
 				
@@ -179,7 +191,6 @@ DSide.Store = CLASS((cls) => {
 				// 데이터를 저장하기 전 검증합니다.
 				if (validResult.isValid === true) {
 					
-					let accountId = data.accountId;
 					let createTime = data.createTime;
 					let lastUpdateTime = data.lastUpdateTime;
 					
@@ -187,7 +198,7 @@ DSide.Store = CLASS((cls) => {
 					if (originData !== undefined) {
 						
 						// 데이터가 유효한지 검사합니다.
-						if (originData.createTime === createTime && lastUpdateTime !== undefined) {
+						if (createTime === originData.createTime && lastUpdateTime !== undefined) {
 							
 							// 기존 데이터는 삭제합니다.
 							removeData(id);

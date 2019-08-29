@@ -1,6 +1,6 @@
 DSide.SecureStore = CLASS((cls) => {
 	
-	let stores = [];
+	let stores = {};
 	
 	let getAllStores = cls.getAllStores = () => {
 		return stores;
@@ -37,7 +37,7 @@ DSide.SecureStore = CLASS((cls) => {
 			let storeName = params.storeName;
 			let dataStructure = params.dataStructure;
 			
-			stores.push(self);
+			stores[storeName] = self;
 			
 			// 데이터 검증 오브젝트
 			let valid = VALID(dataStructure);
@@ -107,7 +107,7 @@ DSide.SecureStore = CLASS((cls) => {
 					let lastUpdateTime = data.lastUpdateTime;
 					
 					// 데이터가 유효한지 검사합니다.
-					if (createTime !== undefined && lastUpdateTime === undefined && DSide.Verify({
+					if (createTime !== undefined && lastUpdateTime === undefined && dataSet[hash] === undefined && DSide.Verify({
 						accountId : accountId,
 						data : data,
 						hash : hash
@@ -136,6 +136,39 @@ DSide.SecureStore = CLASS((cls) => {
 					return {
 						validErrors : validResult.validErrors
 					};
+				}
+			};
+			
+			// 데이터의 싱크를 맞춥니다.
+			let syncData = self.syncData = (params) => {
+				//REQUIRED: params
+				//REQUIRED: params.data
+				//REQUIRED: params.data.accountId
+				//REQUIRED: params.hash
+				
+				let data = params.data;
+				let hash = params.hash;
+				
+				let validResult = checkValid(data);
+				
+				// 데이터를 저장하기 전 검증합니다.
+				if (validResult.isValid === true) {
+					
+					let accountId = data.accountId;
+					let createTime = data.createTime;
+					
+					// 데이터가 유효한지 검사합니다.
+					// 이 때는 수정일이 존재할 수 있습니다.
+					if (createTime !== undefined && DSide.Verify({
+						accountId : accountId,
+						data : data,
+						hash : hash
+					}) === true) {
+						
+						dataSet[hash] = data;
+						
+						isEdited = true;
+					}
 				}
 			};
 			
@@ -173,7 +206,7 @@ DSide.SecureStore = CLASS((cls) => {
 					if (originData !== undefined) {
 						
 						// 데이터가 유효한지 검사합니다.
-						if (originData.createTime === createTime && lastUpdateTime !== undefined && DSide.Verify({
+						if (createTime === originData.createTime && lastUpdateTime !== undefined && DSide.Verify({
 							accountId : accountId,
 							data : data,
 							hash : hash

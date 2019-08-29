@@ -1,6 +1,6 @@
 DSide.TargetStore = CLASS((cls) => {
 	
-	let stores = [];
+	let stores = {};
 	
 	let getAllStores = cls.getAllStores = () => {
 		return stores;
@@ -14,16 +14,11 @@ DSide.TargetStore = CLASS((cls) => {
 			
 			let dataStructure = params.dataStructure;
 			
-			dataStructure.id = {
+			dataStructure.target = {
 				notEmpty : true,
 				size : {
 					max : 256
 				}
-			};
-			
-			dataStructure.accountId = {
-				notEmpty : true,
-				size : 42
 			};
 			
 			dataStructure.createTime = {
@@ -44,7 +39,7 @@ DSide.TargetStore = CLASS((cls) => {
 			let storeName = params.storeName;
 			let dataStructure = params.dataStructure;
 			
-			stores.push(self);
+			stores[storeName] = self;
 			
 			// 전체 대상 해시 셋
 			let targetHashSet = {};
@@ -96,7 +91,12 @@ DSide.TargetStore = CLASS((cls) => {
 			let isEditeds = {};
 			
 			// 모든 데이터를 가지고 만든 해쉬를 반환합니다.
-			let getHash = self.getHash = (target) => {
+			let getHash = self.getHash = () => {
+				return DSide.Store.generateHash(dataMap);
+			};
+			
+			// 대상 해시 셋을 가지고 만든 해쉬를 반환합니다.
+			let getTargetHash = self.getTargetHash = (target) => {
 				//REQUIRED: target
 				
 				return DSide.Store.generateHash(getDataSet(target));
@@ -107,6 +107,11 @@ DSide.TargetStore = CLASS((cls) => {
 				//REQUIRED: target
 				
 				return dataMap[target] === undefined ? {} : dataMap[target];
+			};
+			
+			// 모든 대상 해시 셋을 반환합니다.
+			let getTargetHashSet = self.getTargetHashSet = () => {
+				return targetHashSet;
 			};
 			
 			// 데이터를 검증합니다.
@@ -125,7 +130,6 @@ DSide.TargetStore = CLASS((cls) => {
 				//REQUIRED: params.id
 				//REQUIRED: params.data
 				//REQUIRED: params.data.target
-				//REQUIRED: params.data.accountId
 				
 				let id = params.id;
 				let data = params.data;
@@ -135,9 +139,7 @@ DSide.TargetStore = CLASS((cls) => {
 				// 데이터를 저장하기 전 검증합니다.
 				if (validResult.isValid === true) {
 					
-					let id = data.id;
 					let target = data.target;
-					let accountId = data.accountId;
 					let createTime = data.createTime;
 					let lastUpdateTime = data.lastUpdateTime;
 					
@@ -148,19 +150,29 @@ DSide.TargetStore = CLASS((cls) => {
 							dataMap[target] = {};
 						}
 						
-						dataMap[target][id] = data;
+						if (dataMap[target][id] === undefined) {
+							
+							dataMap[target][id] = data;
+							
+							isEditeds[target] = true;
+							
+							// 데이터가 변경되면 대상의 해시값도 변경됩니다.
+							targetHashSet[target] = getHash(target);
+							
+							isTargetHashSetEdited = true;
+							
+							// 데이터 저장 완료
+							return {
+								savedData : data
+							};
+						}
 						
-						isEditeds[target] = true;
-						
-						// 데이터가 변경되면 대상의 해시값도 변경됩니다.
-						targetHashSet[target] = getHash(target);
-						
-						isTargetHashSetEdited = true;
-						
-						// 데이터 저장 완료
-						return {
-							savedData : data
-						};
+						// 유효하지 않은 데이터입니다.
+						else {
+							return {
+								isNotVerified : true
+							};
+						}
 					}
 					
 					// 유효하지 않은 데이터입니다.
@@ -176,6 +188,43 @@ DSide.TargetStore = CLASS((cls) => {
 					return {
 						validErrors : validResult.validErrors
 					};
+				}
+			};
+			
+			// 데이터의 싱크를 맞춥니다.
+			let syncData = self.syncData = (params) => {
+				//REQUIRED: params.id
+				//REQUIRED: params.data
+				//REQUIRED: params.data.target
+				
+				let id = params.id;
+				let data = params.data;
+				
+				let validResult = checkValid(data);
+				
+				// 데이터를 저장하기 전 검증합니다.
+				if (validResult.isValid === true) {
+					
+					let target = data.target;
+					let createTime = data.createTime;
+					
+					// 데이터가 유효한지 검사합니다.
+					// 이 때는 수정일이 존재할 수 있습니다.
+					if (createTime !== undefined) {
+						
+						if (dataMap[target] === undefined) {
+							dataMap[target] = {};
+						}
+						
+						dataMap[target][id] = data;
+						
+						isEditeds[target] = true;
+						
+						// 데이터가 변경되면 대상의 해시값도 변경됩니다.
+						targetHashSet[target] = getHash(target);
+						
+						isTargetHashSetEdited = true;
+					}
 				}
 			};
 			
@@ -198,7 +247,6 @@ DSide.TargetStore = CLASS((cls) => {
 				//REQUIRED: params.id
 				//REQUIRED: params.data
 				//REQUIRED: params.data.target
-				//REQUIRED: params.data.accountId
 				//REQUIRED: params.data.createTime
 				//REQUIRED: params.data.lastUpdateTime
 				
@@ -211,7 +259,6 @@ DSide.TargetStore = CLASS((cls) => {
 				if (validResult.isValid === true) {
 					
 					let target = data.target;
-					let accountId = data.accountId;
 					let createTime = data.createTime;
 					let lastUpdateTime = data.lastUpdateTime;
 					
@@ -223,7 +270,7 @@ DSide.TargetStore = CLASS((cls) => {
 					if (originData !== undefined) {
 						
 						// 데이터가 유효한지 검사합니다.
-						if (originData.createTime === createTime && lastUpdateTime !== undefined) {
+						if (createTime === originData.createTime && lastUpdateTime !== undefined && target === originData.target) {
 							
 							// 기존 데이터는 삭제합니다.
 							removeData({
@@ -287,28 +334,30 @@ DSide.TargetStore = CLASS((cls) => {
 					let target = params.target;
 					let id = params.id;
 					
+					// 존재하지 않는 대상이면 대상을 삭제합니다.
 					if (dataMap[target] === undefined) {
-						delete targetHashSet[target];
+						removeTarget(target);
 					}
 					
 					else {
 						
 						delete dataMap[target][id];
 						
+						// 빈 대상이면 대상을 삭제합니다.
 						if (CHECK_IS_EMPTY_DATA(dataMap[target]) === true) {
-							delete dataMap[target];
-							delete targetHashSet[target];
+							removeTarget(target);
 						}
 						
 						else {
+							
 							targetHashSet[target] = getHash(target);
+							
+							// 데이터가 변경되면 대상의 해시값도 변경됩니다.
+							isTargetHashSetEdited = true;
+							
+							isEditeds[target] = true;
 						}
 					}
-					
-					// 데이터가 변경되면 대상의 해시값도 변경됩니다.
-					isTargetHashSetEdited = true;
-					
-					isEditeds[target] = true;
 					
 					// 데이터 삭제 완료
 					return {
@@ -322,6 +371,19 @@ DSide.TargetStore = CLASS((cls) => {
 						isNotExists : true
 					};
 				}
+			};
+			
+			// 대상을 삭제합니다.
+			let removeTarget = self.removeTarget = (target) => {
+				//REQUIRED: target
+				
+				delete dataMap[target];
+				delete targetHashSet[target];
+				
+				// 데이터가 변경되면 대상의 해시값도 변경됩니다.
+				isTargetHashSetEdited = true;
+				
+				isEditeds[target] = true;
 			};
 			
 			// 10초에 한번씩 변경사항을 확인하여, 변경사항이 있는 경우 모든 데이터를 파일로 저장합니다.

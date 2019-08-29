@@ -26,26 +26,40 @@ DSide.Node = OBJECT((cls) => {
 			
 			// 모든 클라이언트들의 send 함수
 			let sendToClients = [];
+			let sendToTargetClientMap = {};
 			
 			// 다른 노드가 연결할 서버를 생성합니다.
 			WEB_SOCKET_SERVER(WEB_SERVER(CONFIG.DSide.port), (clientInfo, on, off, send, disconnect) => {
 				
+				let isNode = false;
+				
 				let loginToken;
 				let signedAccountId;
 				
-				// 모든 사용자들에게 전파합니다.
-				let broadcast = (methodName, data) => {
-					EACH(sendToClients, (sendToClient) => {
-						
-						// 현재 클라이언트는 제외
-						if (sendToClient !== send) {
-							
-							sendToClient({
-								methodName : methodName,
-								data : data
-							});
-						}
+				// 모든 노드들에게 전파합니다.
+				let broadcastNode = (methodName, params) => {
+					EACH(sendToNodes, (sendToNode) => {
+						sendToNode(methodName, params);
 					});
+				};
+				
+				// 모든 대상 클라이언트들에게 전파합니다.
+				let broadcastTargetClient = (methodName, target, data) => {
+					
+					if (sendToTargetClientMap[target] !== undefined) {
+						
+						EACH(sendToTargetClientMap[target], (sendToClient) => {
+							
+							// 현재 클라이언트는 제외
+							if (sendToClient !== send) {
+								
+								sendToClient({
+									methodName : methodName,
+									data : data
+								});
+							}
+						});
+					}
 				};
 				
 				// 접속한 클라이언트의 IP를 반환합니다.
@@ -69,17 +83,177 @@ DSide.Node = OBJECT((cls) => {
 				});
 				
 				// 노드끼리 서로 연결합니다.
-				on('connectNode', (params, ret) => {
+				on('connectNode', (port, ret) => {
+					if (port !== undefined) {
+						connectToNode(clientInfo.ip + ':' + port, () => {
+							isNode = true;
+						});
+					}
+				});
+				
+				// 노드의 계정 ID를 반환합니다.
+				on('getAccountId', (notUsing, ret) => {
+					ret(CONFIG.DSide.accountId);
+				});
+				
+				// 데이터 저장소의 해시를 반환합니다.
+				on('getStoreHash', (storeName, ret) => {
 					
-					if (params !== undefined) {
+					let store = DSide.Store.getAllStores()[storeName];
+					if (store !== undefined) {
 						
-						let port = params.port;
-						let accountId = params.accountId;
+						ret(store.getHash());
+					}
+				});
+				
+				// 데이터 저장소의 전체 데이터를 반환합니다.
+				on('getStoreDataSet', (storeName, ret) => {
+					
+					let store = DSide.Store.getAllStores()[storeName];
+					if (store !== undefined) {
 						
-						if (port !== undefined && accountId !== undefined) {
-							connectToNode(clientInfo.ip + ':' + port);
+						ret(store.getDataSet());
+					}
+				});
+				
+				// 대상이 있는 데이터 저장소의 해시를 반환합니다.
+				on('getTargetStoreHash', (storeName, ret) => {
+					
+					let store = DSide.TargetStore.getAllStores()[storeName];
+					if (store !== undefined) {
+						
+						ret(store.getHash());
+					}
+				});
+				
+				// 대상이 있는 데이터 저장소의 대상 해시 셋을 반환합니다.
+				on('getTargetStoreTargetHashSet', (storeName, ret) => {
+					
+					let store = DSide.TargetStore.getAllStores()[storeName];
+					if (store !== undefined) {
+						
+						ret(store.getTargetHashSet());
+					}
+				});
+				
+				// 대상이 있는 데이터 저장소의 대상에 해당하는 전체 데이터를 반환합니다.
+				on('getTargetStoreDataSet', (params, ret) => {
+					
+					let storeName = params.storeName;
+					let target = params.target;
+					
+					let store = DSide.TargetStore.getAllStores()[storeName];
+					if (store !== undefined) {
+						
+						ret(store.getDataSet(target));
+					}
+				});
+				
+				// 보안 데이터 저장소의 해시를 반환합니다.
+				on('getSecureStoreHash', (storeName, ret) => {
+					
+					let store = DSide.SecureStore.getAllStores()[storeName];
+					if (store !== undefined) {
+						
+						ret(store.getHash());
+					}
+				});
+				
+				// 보안 데이터 저장소의 전체 데이터를 반환합니다.
+				on('getSecureStoreDataSet', (storeName, ret) => {
+					
+					let store = DSide.SecureStore.getAllStores()[storeName];
+					if (store !== undefined) {
+						
+						ret(store.getDataSet());
+					}
+				});
+				
+				// 대상이 있는 보안 데이터 저장소의 해시를 반환합니다.
+				on('getSecureTargetStoreHash', (storeName, ret) => {
+					
+					let store = DSide.SecureTargetStore.getAllStores()[storeName];
+					if (store !== undefined) {
+						
+						ret(store.getHash());
+					}
+				});
+				
+				// 대상이 있는 보안 데이터 저장소의 대상 해시 셋을 반환합니다.
+				on('getSecureTargetStoreTargetHashSet', (storeName, ret) => {
+					
+					let store = DSide.SecureTargetStore.getAllStores()[storeName];
+					if (store !== undefined) {
+						
+						ret(store.getTargetHashSet());
+					}
+				});
+				
+				// 대상이 있는 보안 데이터 저장소의 대상에 해당하는 전체 데이터를 반환합니다.
+				on('getSecureTargetStoreDataSet', (params, ret) => {
+					
+					let storeName = params.storeName;
+					let target = params.target;
+					
+					let store = DSide.SecureTargetStore.getAllStores()[storeName];
+					if (store !== undefined) {
+						
+						ret(store.getDataSet(target));
+					}
+				});
+				
+				sendToClients.push(send);
+				
+				on('joinTarget', (target, ret) => {
+					
+					if (target.length <= 256) {
+						
+						if (sendToTargetClientMap[target] === undefined) {
+							sendToTargetClientMap[target] = [];
+						}
+						
+						if (CHECK_IS_IN({
+							array : sendToTargetClientMap[target],
+							value : send
+						}) !== true) {
+							sendToTargetClientMap[target].push(send);
 						}
 					}
+				});
+				
+				on('exitTarget', (target, ret) => {
+					
+					if (sendToTargetClientMap[target] !== undefined) {
+						
+						REMOVE({
+							array : sendToTargetClientMap[target],
+							value : send
+						});
+						
+						if (sendToTargetClientMap[target].length === 0) {
+							delete sendToTargetClientMap[target];
+						}
+					}
+				});
+				
+				on('__DISCONNECTED', () => {
+					
+					REMOVE({
+						array : sendToClients,
+						value : send
+					});
+					
+					EACH(sendToTargetClientMap, (sendToTargetClients, target) => {
+						
+						REMOVE({
+							array : sendToTargetClients,
+							value : send
+						});
+						
+						if (sendToTargetClients.length === 0) {
+							delete sendToTargetClientMap[target];
+						}
+					});
 				});
 				
 				// 로그인 토큰을 생성합니다.
@@ -108,53 +282,325 @@ DSide.Node = OBJECT((cls) => {
 				});
 				
 				// 채팅 메시지를 저장합니다.
-				on('sendChatMessage', (message) => {
+				on('saveChatMessage', (params) => {
 					
-					if (signedAccountId !== undefined && message !== undefined) {
+					if (isNode === true && params !== undefined) {
+						
+						DSide.ChatStore.saveData(params);
+						
+						let data = params.data;
+						if (data !== undefined) {
+							
+							let target = data.target;
+							
+							// 모든 대상 클라이언트들에게 전파합니다.
+							broadcastTargetClient('newChatMessage', target, {
+								senderId : data.senderId,
+								message : data.message,
+								createTime : data.createTime
+							});
+						}
+					}
+				});
+				
+				// 채팅 메시지를 전달받습니다.
+				on('sendChatMessage', (params) => {
+					
+					if (signedAccountId !== undefined && params !== undefined) {
+						
+						let target = params.target;
+						let message = params.message;
 						
 						message = String(message).trim();
 						
 						if (message !== '') {
 							
-							// 모든 사용자들에게 전파합니다.
-							broadcast('newChatMessage', {
+							let id = UUID();
+							let data = {
 								senderId : signedAccountId,
-								//TODO: 추후 이름 기능 추가
-								//senderName : ,
-								message : message
+								target : target,
+								message : message,
+								createTime : new Date()
+							};
+							
+							DSide.ChatStore.saveData({
+								id : id,
+								data : data
+							});
+							
+							// 모든 노드들에게 전파합니다.
+							broadcastNode('saveChatMessage', {
+								id : id,
+								data : data
+							});
+							
+							// 모든 대상 클라이언트들에게 전파합니다.
+							broadcastTargetClient('newChatMessage', target, {
+								senderId : data.senderId,
+								message : data.message,
+								createTime : data.createTime
 							});
 						}
 					}
 				});
 				
 				// 채팅 메시지들을 가져옵니다.
-				on('getChatMessages', (subject, ret) => {
-					//ret(DSide.ChatStore.getMessages());
-				});
-				
-				sendToClients.push(send);
-				on('__DISCONNECTED', () => {
-					REMOVE({
-						array : sendToClients,
-						value : send
+				on('getChatMessages', (target, ret) => {
+					
+					let messages = [];
+					
+					EACH(DSide.ChatStore.getDataSet(target), (data) => {
+						messages.push({
+							senderId : data.senderId,
+							message : data.message,
+							createTime : data.createTime
+						});
 					});
+					
+					messages.sort((a, b) => {
+						if (a.createTime < b.createTime) {
+							return -1;
+						}
+						if (a.createTime > b.createTime) {
+							return 1;
+						}
+						return 0;
+					});
+					
+					ret(messages);
 				});
 			});
 			
-			// 모든 저장소의 싱크를 맞춥니다.
-			let syncStores = () => {
+			// 저장소의 싱크를 맞춥니다.
+			let syncStore = (storeName, sendToNode) => {
 				
-				// 단일 저장소들의 싱크를 맞춥니다.
-				EACH(DSide.Store.getAllStores(), (store) => {
+				let store = DSide.Store.getAllStores()[storeName];
+				if (store !== undefined) {
 					
-					
-				});
+					sendToNode({
+						methodName : 'getStoreHash',
+						data : storeName
+					}, (storeHash) => {
+						
+						// 해시값이 다르면 데이터 싱크를 시작합니다.
+						if (store.getHash() !== storeHash) {
+							
+							sendToNode({
+								methodName : 'getStoreDataSet',
+								data : storeName
+							}, (dataSet) => {
+								
+								let originDataSet = store.getDataSet();
+								
+								// 현재 없는 데이터면 생성
+								EACH(dataSet, (data, id) => {
+									if (originDataSet[id] === undefined) {
+										store.syncData({
+											id : id,
+											data : data
+										});
+									}
+								});
+								
+								// 노드에 없는 데이터면 삭제
+								EACH(dataSet, (data, id) => {
+									if (originDataSet[id] === undefined) {
+										store.removeData(id);
+									}
+								});
+							});
+						}
+					});
+				}
+			};
+			
+			// 대상이 존재하는 저장소의 싱크를 맞춥니다.
+			let syncTargetStore = (storeName, sendToNode) => {
 				
-				// 타겟이 존재하는 저장소들의 싱크를 맞춥니다.
-				EACH(DSide.TargetStore.getAllStores(), (store) => {
+				let store = DSide.Store.getAllStores()[storeName];
+				if (store !== undefined) {
 					
+					sendToNode({
+						methodName : 'getTargetStoreHash',
+						data : storeName
+					}, (storeHash) => {
+						
+						// 해시값이 다르면 데이터 싱크를 시작합니다.
+						if (store.getHash() !== storeHash) {
+							
+							sendToNode({
+								methodName : 'getTargetStoreTargetHashSet',
+								data : storeName
+							}, (targetHashSet) => {
+								
+								let originTargetHashSet = store.getTargetHashSet();
+								
+								// 대상 해시 셋을 비교합니다.
+								EACH(targetHashSet, (hash, target) => {
+									
+									// 해시값이 다르면 내부 데이터를 비교합니다.
+									if (originTargetHashSet[target] !== hash) {
+										
+										sendToNode({
+											methodName : 'getTargetStoreDataSet',
+											data : {
+												storeName : storeName,
+												target : target
+											}
+										}, (dataSet) => {
+											
+											let originDataSet = store.getDataSet(target);
+											
+											// 현재 없는 데이터면 생성
+											EACH(dataSet, (data, id) => {
+												if (originDataSet[id] === undefined) {
+													store.syncData({
+														id : id,
+														// data 내에 target 존재
+														data : data
+													});
+												}
+											});
+											
+											// 노드에 없는 데이터면 삭제
+											EACH(dataSet, (data, id) => {
+												if (originDataSet[id] === undefined) {
+													store.removeData({
+														target : target,
+														id : id
+													});
+												}
+											});
+										});
+									}
+								});
+								
+								// 노드에 없는 대상이면 삭제
+								EACH(originTargetHashSet, (hash, target) => {
+									if (targetHashSet[target] === undefined) {
+										store.removeTarget(target);
+									}
+								});
+							});
+						}
+					});
+				}
+			};
+			
+			// 보안 저장소의 싱크를 맞춥니다.
+			let syncSecureStore = (storeName, sendToNode) => {
+				
+				let store = DSide.Store.getAllStores()[storeName];
+				if (store !== undefined) {
 					
-				});
+					sendToNode({
+						methodName : 'getSecureStoreHash',
+						data : storeName
+					}, (storeHash) => {
+						
+						// 해시값이 다르면 데이터 싱크를 시작합니다.
+						if (store.getHash() !== storeHash) {
+							
+							sendToNode({
+								methodName : 'getSecureStoreDataSet',
+								data : storeName
+							}, (dataSet) => {
+								
+								let originDataSet = store.getDataSet();
+								
+								// 현재 없는 데이터면 생성
+								EACH(dataSet, (data, hash) => {
+									if (originDataSet[hash] === undefined) {
+										store.syncData({
+											hash : hash,
+											data : data
+										});
+									}
+								});
+								
+								// 노드에 없는 데이터면 삭제
+								EACH(dataSet, (data, hash) => {
+									if (originDataSet[hash] === undefined) {
+										store.removeData(hash);
+									}
+								});
+							});
+						}
+					});
+				}
+			};
+			
+			// 대상이 존재하는 보안 저장소의 싱크를 맞춥니다.
+			let syncSecureTargetStore = (storeName, sendToNode) => {
+				
+				let store = DSide.Store.getAllStores()[storeName];
+				if (store !== undefined) {
+					
+					sendToNode({
+						methodName : 'getSecureTargetStoreHash',
+						data : storeName
+					}, (storeHash) => {
+						
+						// 해시값이 다르면 데이터 싱크를 시작합니다.
+						if (store.getHash() !== storeHash) {
+							
+							sendToNode({
+								methodName : 'getSecureTargetStoreTargetHashSet',
+								data : storeName
+							}, (targetHashSet) => {
+								
+								let originTargetHashSet = store.getTargetHashSet();
+								
+								// 대상 해시 셋을 비교합니다.
+								EACH(targetHashSet, (hash, target) => {
+									
+									// 해시값이 다르면 내부 데이터를 비교합니다.
+									if (originTargetHashSet[target] !== hash) {
+										
+										sendToNode({
+											methodName : 'getSecureTargetStoreDataSet',
+											data : {
+												storeName : storeName,
+												target : target
+											}
+										}, (dataSet) => {
+											
+											let originDataSet = store.getDataSet(target);
+											
+											// 현재 없는 데이터면 생성
+											EACH(dataSet, (data, hash) => {
+												if (originDataSet[hash] === undefined) {
+													store.syncData({
+														hash : hash,
+														// data 내에 target 존재
+														data : data
+													});
+												}
+											});
+											
+											// 노드에 없는 데이터면 삭제
+											EACH(dataSet, (data, hash) => {
+												if (originDataSet[hash] === undefined) {
+													store.removeData({
+														target : target,
+														hash : hash
+													});
+												}
+											});
+										});
+									}
+								});
+								
+								// 노드에 없는 대상이면 삭제
+								EACH(originTargetHashSet, (hash, target) => {
+									if (targetHashSet[target] === undefined) {
+										store.removeTarget(target);
+									}
+								});
+							});
+						}
+					});
+				}
 			};
 			
 			// 다른 노드에 연결합니다.
@@ -195,13 +641,34 @@ DSide.Node = OBJECT((cls) => {
 									
 									sendToNodes[url] = send;
 									
-									on('__DISCONNECTED', () => {
-										delete sendToNodes[url];
+									// 운영 시작 시간을 기록합니다.
+									DSide.NodeOperationTimeStore.saveData({
+										id : url,
+										data : {
+											startOperationTime : new Date(),
+											createTime : new Date()
+										}
 									});
 									
-									if (callback !== undefined) {
-										callback();
-									}
+									on('__DISCONNECTED', () => {
+										
+										delete sendToNodes[url];
+										
+										DSide.NodeOperationTimeStore.getData(url, (data) => {
+											
+											delete data.startOperationTime;
+											data.operationTime = Date.now() - data.startOperationTime.getTime();
+											data.lastUpdateTime = new Date();
+											
+											// 운영 종료 시간을 기록합니다.
+											DSide.NodeOperationTimeStore.updateData({
+												id : url,
+												data : data
+											});
+										});
+									});
+									
+									callback(send);
 								}
 								
 								else {
@@ -289,13 +756,32 @@ DSide.Node = OBJECT((cls) => {
 					// 모든 노드들에 연결합니다.
 					EACH(nodeURLs, (url) => {
 						
-						connectToNode(url, () => {
+						connectToNode(url, (sendToNode) => {
 							
 							// 가장 빠른 노드를 찾았습니다.
 							if (isFoundFastestNode !== true) {
 								
 								// 가장 빠른 노드와 모든 저장소의 싱크를 맞춥니다.
-								syncStores();
+								
+								// 단일 저장소들의 싱크를 맞춥니다.
+								EACH(DSide.Store.getAllStores(), (store, storeName) => {
+									syncStore(storeName, sendToNode);
+								});
+								
+								// 대상이 존재하는 저장소들의 싱크를 맞춥니다.
+								EACH(DSide.TargetStore.getAllStores(), (store, storeName) => {
+									syncTargetStore(storeName, sendToNode);
+								});
+								
+								// 단일 보안 저장소들의 싱크를 맞춥니다.
+								EACH(DSide.SecureStore.getAllStores(), (store, storeName) => {
+									syncSecureStore(storeName, sendToNode);
+								});
+								
+								// 대상이 존재하는 보안 저장소들의 싱크를 맞춥니다.
+								EACH(DSide.SecureTargetStore.getAllStores(), (store, storeName) => {
+									syncSecureTargetStore(storeName, sendToNode);
+								});
 								
 								isFoundFastestNode = true;
 							}
@@ -303,6 +789,92 @@ DSide.Node = OBJECT((cls) => {
 					});
 				};
 			}]);
+			
+			// 가장 높은 가중지의 저장소와 싱크를 맞춥니다.
+			let syncMaxWeightStore = (store, getStoreHashMethodName, storeName, syncStore) => {
+				
+				let storeHash = store.getHash();
+				
+				// 해시의 가중치를 수집합니다.
+				let hashWeights = {};
+				hashWeights[storeHash] = DSide.dStore.getBalance(CONFIG.DSide.accountId);
+				
+				// 각 해시들에 해당하는 노드들을 저장합니다.
+				let hashSendToNodes = {};
+				hashSendToNodes[storeHash] = [];
+				
+				PARALLEL(sendToNodes, [
+				
+				// 각 노드들에 저장소의 해시값을 요청합니다.
+				(sendToNode, done) => {
+					
+					let isDone = false;
+					
+					sendToNode.send('getAccountId', (accountId) => {
+						if (isDone !== true) {
+							
+							sendToNode.send({
+								methodName : getStoreHashMethodName,
+								data : storeName
+							}, (hash) => {
+								if (isDone !== true) {
+									
+									if (hashWeights[hash] === undefined) {
+										hashWeights[hash] = 0;
+									}
+									
+									// 해시의 가중치를 늘립니다.
+									hashWeights[hash] += DSide.dStore.getBalance(accountId);
+									
+									if (hashSendToNodes[hash] === undefined) {
+										hashSendToNodes[hash] = [];
+									}
+									
+									hashSendToNodes[hash].push(sendToNode);
+									
+									done();
+									isDone = true;
+								}
+							});
+						}
+					});
+					
+					// 요청의 타임아웃은 5초입니다.
+					DELAY(5, () => {
+						if (isDone !== true) {
+							done();
+							isDone = true;
+						}
+					});
+				},
+				
+				() => {
+					
+					let maxWeight = -1;
+					let maxWeightHash;
+					
+					// 가장 가중치가 높은 해시를 찾습니다.
+					EACH(hashWeights, (weight, hash) => {
+						
+						if (maxWeight < weight) {
+							weight = maxWeight;
+							maxWeightHash = hash;
+						}
+					});
+					
+					EACH(hashSendToNodes[maxWeightHash], (sendToNode) => {
+						
+						if (CHECK_IS_IN({
+							array : sendToNodes,
+							value : sendToNode
+						}) === true) {
+							
+							syncStore(storeName, sendToNode);
+							return false;
+						}
+					});
+				}]);
+			};
 			
 			// 하루에 한 번 토큰을 지급하고, 모든 저장소의 싱크를 맞춥니다.
 			INTERVAL(1, RAR(() => {
@@ -312,10 +884,54 @@ DSide.Node = OBJECT((cls) => {
 				// 자정이 되면 실행
 				if (nowCal.getHour() === 0 && nowCal.getMinute() === 0 && nowCal.getSecond() === 0) {
 					
-					//TODO 토큰 지급하기
+					// 토큰들을 지급합니다.
+					
+					// 초기 d 수량보다 부족한 계정들에 d를 충전합니다.
+					DSide.dStore.chargeLacks();
+					
+					// 노드 운영 시간에 따라 d를 지급합니다.
+					EACH(DSide.NodeOperationTimeStore.getDataSet(), (data, url) => {
+						
+						let sendToNode = sendToNodes[url];
+						if (sendToNode !== undefined) {
+							
+							sendToNode.send('getAccountId', (accountId) => {
+								
+								DSide.dStore.chargeNodeReward({
+									accountId : accountId,
+									operationTime : DSide.NodeOperationTimeStore.getOperationTime(url)
+								});
+							});
+						}
+					});
+					
+					// 노드 운영 시간을 초기화합니다.
+					DSide.NodeOperationTimeStore.clearOperationTimes();
 					
 					// 토큰을 지급하고 다른 네트워크에서 토큰들을 지급하기까지 5초간 대기한 후, 모든 저장소의 싱크를 맞춥니다.
-					DELAY(5, syncStores);
+					DELAY(5, () => {
+						
+						// 단일 저장소들의 싱크를 맞춥니다.
+						EACH(DSide.Store.getAllStores(), (store, storeName) => {
+							syncMaxWeightStore(store, 'getStoreHash', storeName, syncStore);
+						});
+						
+						// 대상이 존재하는 저장소들의 싱크를 맞춥니다.
+						EACH(DSide.TargetStore.getAllStores(), (store, storeName) => {
+							syncMaxWeightStore(store, 'getTargetStoreHash', storeName, syncTargetStore);
+						});
+						
+						// 단일 보안 저장소들의 싱크를 맞춥니다.
+						EACH(DSide.SecureStore.getAllStores(), (store, storeName) => {
+							syncMaxWeightStore(store, 'getSecureStoreHash', storeName, syncSecureStore);
+							syncSecureStore(storeName, sendToNode);
+						});
+						
+						// 대상이 존재하는 보안 저장소들의 싱크를 맞춥니다.
+						EACH(DSide.SecureTargetStore.getAllStores(), (store, storeName) => {
+							syncMaxWeightStore(store, 'getSecureTargetStoreHash', storeName, syncSecureTargetStore);
+						});
+					});
 				}
 			}));
 		}
