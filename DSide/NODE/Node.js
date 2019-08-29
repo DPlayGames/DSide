@@ -294,11 +294,7 @@ DSide.Node = OBJECT((cls) => {
 							let target = data.target;
 							
 							// 모든 대상 클라이언트들에게 전파합니다.
-							broadcastTargetClient('newChatMessage', target, {
-								senderId : data.senderId,
-								message : data.message,
-								createTime : data.createTime
-							});
+							broadcastTargetClient('newChatMessage', target, data);
 						}
 					}
 				});
@@ -335,11 +331,7 @@ DSide.Node = OBJECT((cls) => {
 							});
 							
 							// 모든 대상 클라이언트들에게 전파합니다.
-							broadcastTargetClient('newChatMessage', target, {
-								senderId : data.senderId,
-								message : data.message,
-								createTime : data.createTime
-							});
+							broadcastTargetClient('newChatMessage', target, data);
 						}
 					}
 				});
@@ -350,11 +342,7 @@ DSide.Node = OBJECT((cls) => {
 					let messages = [];
 					
 					EACH(DSide.ChatStore.getDataSet(target), (data) => {
-						messages.push({
-							senderId : data.senderId,
-							message : data.message,
-							createTime : data.createTime
-						});
+						messages.push(data);
 					});
 					
 					messages.sort((a, b) => {
