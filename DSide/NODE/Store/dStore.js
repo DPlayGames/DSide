@@ -28,12 +28,16 @@ DSide.dStore = OBJECT({
 	
 	init : (inner, self) => {
 		
+		const ETHUtil = require('ethereumjs-util');
+		
 		// 초기 d의 수량은 20개입니다.
 		const INIT_D_BALANCE = 20;
 		
 		// 특정 계정의 잔고를 가져옵니다.
 		let getBalance = self.getBalance = (accountId) => {
 			//REQUIRED: accountId
+			
+			accountId = ETHUtil.toChecksumAddress(accountId);
 			
 			let data = self.getData(accountId);
 			
@@ -53,8 +57,8 @@ DSide.dStore = OBJECT({
 			let amount = params.amount;
 			let hash = params.hash;
 			
-			accountId = accountId.toLowerCase();
-			targetAccountId = targetAccountId.toLowerCase();
+			accountId = ETHUtil.toChecksumAddress(accountId);
+			targetAccountId = ETHUtil.toChecksumAddress(targetAccountId);
 			
 			if (
 			// 데이터를 검증합니다.
@@ -94,27 +98,28 @@ DSide.dStore = OBJECT({
 			let accountId = params.accountId;
 			let amount = params.amount;
 			
-			accountId = accountId.toLowerCase();
+			accountId = ETHUtil.toChecksumAddress(accountId);
 			
 			let data = self.getData(accountId);
 			if (data === undefined) {
 				
 				// 계정이 없으면 생성합니다.
-				saveData({
+				data = self.saveData({
 					id : accountId,
 					data : {
 						d : INIT_D_BALANCE,
 						createTime : new Date()
 					}
-				});
+				}).savedData;
 			}
 			
 			// 잔고가 더 커야합니다.
 			if (data.d - amount >= 0) {
 				
 				data.d -= amount;
+				data.lastUpdateTime = new Date();
 				
-				updateData({
+				self.updateData({
 					id : accountId,
 					data : data
 				});
@@ -135,24 +140,25 @@ DSide.dStore = OBJECT({
 			let accountId = params.accountId;
 			let amount = params.amount;
 			
-			accountId = accountId.toLowerCase();
+			accountId = ETHUtil.toChecksumAddress(accountId);
 			
 			let data = self.getData(accountId);
 			if (data === undefined) {
 				
 				// 계정이 없으면 생성합니다.
-				saveData({
+				data = self.saveData({
 					id : accountId,
 					data : {
 						d : INIT_D_BALANCE,
 						createTime : new Date()
 					}
-				});
+				}).savedData;
 			}
 			
 			data.d += amount;
+			data.lastUpdateTime = new Date();
 			
-			updateData({
+			self.updateData({
 				id : accountId,
 				data : data
 			});
@@ -180,7 +186,7 @@ DSide.dStore = OBJECT({
 			let accountId = params.accountId;
 			let operationTime = params.operationTime;
 			
-			accountId = accountId.toLowerCase();
+			accountId = ETHUtil.toChecksumAddress(accountId);
 			
 			charge({
 				accountId : accountId,

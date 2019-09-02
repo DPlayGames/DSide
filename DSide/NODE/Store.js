@@ -100,6 +100,7 @@ DSide.Store = CLASS((cls) => {
 				//REQUIRED: params
 				//REQUIRED: params.id
 				//REQUIRED: params.data
+				//REQUIRED: params.data.createTime
 				
 				let id = params.id;
 				let data = params.data;
@@ -146,6 +147,8 @@ DSide.Store = CLASS((cls) => {
 				//REQUIRED: params
 				//REQUIRED: params.id
 				//REQUIRED: params.data
+				//REQUIRED: params.data.createTime
+				//OPTIONAL: params.data.lastUpdateTime
 				
 				let id = params.id;
 				let data = params.data;

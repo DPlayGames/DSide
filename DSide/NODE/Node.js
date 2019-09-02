@@ -256,6 +256,62 @@ DSide.Node = OBJECT((cls) => {
 					});
 				});
 				
+				// d 잔고를 가져옵니다.
+				on('getDBalance', (accountId, ret) => {
+					//REQUIRED: accountId
+					
+					if (accountId !== undefined) {
+						ret(DSide.dStore.getBalance(accountId));
+					}
+				});
+				
+				// 계정 세부 내용을 저장합니다.
+				on('saveAccountDetail', (params, ret) => {
+					//REQUIRED: params
+					//REQUIRED: params.hash
+					//REQUIRED: params.data
+					//REQUIRED: params.data.accountId
+					//OPTIONAL: params.data.name
+					//OPTIONAL: params.data.introduce
+					//REQUIRED: params.data.createTime
+					
+					let data = params.data;
+					let createTime = data.createTime;
+					
+					// 5초 이내에 데이터가 작성된 경우에만 저장합니다.
+					if (createTime !== undefined && getNowUTC() - createTime.getTime() < 5000) {
+						
+						let result = DSide.AccountDetailStore.saveData(params);
+						
+						// 성공적으로 저장되면 모든 노드에 전파합니다.
+						if (result.savedData !== undefined) {
+							EACH(sendToNodes, (sendToNode) => {
+								sendToNode({
+									methodName : 'saveAccountDetail',
+									data : params
+								});
+							});
+						}
+						
+						ret(result);
+					}
+					
+					else {
+						ret({
+							isTimeout : true
+						});
+					}
+				});
+				
+				// 계정의 세부 내용을 가져옵니다.
+				on('getAccountDetail', (accountId, ret) => {
+					//REQUIRED: accountId
+					
+					if (accountId !== undefined) {
+						ret(DSide.AccountDetailStore.getAccountDetail(accountId));
+					}
+				});
+				
 				// 로그인 토큰을 생성합니다.
 				on('generateLoginToken', (notUsing, ret) => {
 					ret(loginToken = RANDOM_STR(24));

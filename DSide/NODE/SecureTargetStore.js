@@ -1,6 +1,8 @@
 // 데이터의 대상이 존재하는 스토어
 DSide.SecureTargetStore = CLASS((cls) => {
 	
+	const ETHUtil = require('ethereumjs-util');
+	
 	let stores = {};
 	
 	let getAllStores = cls.getAllStores = () => {
@@ -137,6 +139,7 @@ DSide.SecureTargetStore = CLASS((cls) => {
 				//REQUIRED: params.data
 				//REQUIRED: params.data.target
 				//REQUIRED: params.data.accountId
+				//REQUIRED: params.data.createTime
 				//REQUIRED: params.hash
 				
 				let data = params.data;
@@ -151,6 +154,8 @@ DSide.SecureTargetStore = CLASS((cls) => {
 					let accountId = data.accountId;
 					let createTime = data.createTime;
 					let lastUpdateTime = data.lastUpdateTime;
+					
+					accountId = ETHUtil.toChecksumAddress(accountId);
 					
 					// 데이터가 유효한지 검사합니다.
 					if (createTime !== undefined && lastUpdateTime === undefined && DSide.Verify({
@@ -210,6 +215,8 @@ DSide.SecureTargetStore = CLASS((cls) => {
 				//REQUIRED: params.data
 				//REQUIRED: params.data.target
 				//REQUIRED: params.data.accountId
+				//REQUIRED: params.data.createTime
+				//OPTIONAL: params.data.lastUpdateTime
 				//REQUIRED: params.hash
 				
 				let data = params.data;
@@ -223,6 +230,8 @@ DSide.SecureTargetStore = CLASS((cls) => {
 					let target = data.target;
 					let accountId = data.accountId;
 					let createTime = data.createTime;
+					
+					accountId = ETHUtil.toChecksumAddress(accountId);
 					
 					// 데이터가 유효한지 검사합니다.
 					// 이 때는 수정일이 존재할 수 있습니다.
@@ -286,6 +295,8 @@ DSide.SecureTargetStore = CLASS((cls) => {
 					let accountId = data.accountId;
 					let createTime = data.createTime;
 					let lastUpdateTime = data.lastUpdateTime;
+					
+					accountId = ETHUtil.toChecksumAddress(accountId);
 					
 					let originData = getData({
 						target : target,
