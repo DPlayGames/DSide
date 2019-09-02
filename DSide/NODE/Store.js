@@ -204,7 +204,7 @@ DSide.Store = CLASS((cls) => {
 						if (createTime === originData.createTime && lastUpdateTime !== undefined) {
 							
 							// 기존 데이터는 삭제합니다.
-							removeData(id);
+							dropData(id);
 							
 							dataSet[id] = data;
 							
@@ -263,6 +263,19 @@ DSide.Store = CLASS((cls) => {
 					return {
 						isNotExists : true
 					};
+				}
+			};
+			
+			// 데이터를 삭제합니다.
+			let dropData = self.dropData = (id) => {
+				//REQUIRED: id
+				
+				let originData = getData(id);
+				if (originData !== undefined) {
+					
+					delete dataSet[id];
+					
+					isEdited = true;
 				}
 			};
 			

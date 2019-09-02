@@ -47,7 +47,7 @@ DSide.NodeOperationTimeStore = OBJECT({
 				
 				// 운영중인 노드가 아니면 제거합니다.
 				if (data.startOperationTime === undefined) {
-					removeData(url);
+					dropData(url);
 				}
 				
 				else {

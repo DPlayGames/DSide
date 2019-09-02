@@ -58,7 +58,7 @@ DSide.ChatStore = OBJECT({
 					
 					// 첫 메시지를 삭제합니다.
 					if (firstDataId !== undefined) {
-						removeData(firstDataId);
+						dropData(firstDataId);
 					}
 				}
 			};

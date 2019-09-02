@@ -449,7 +449,7 @@ DSide.Node = OBJECT((cls) => {
 								// 노드에 없는 데이터면 삭제
 								EACH(dataSet, (data, id) => {
 									if (originDataSet[id] === undefined) {
-										store.removeData(id);
+										store.dropData(id);
 									}
 								});
 							});
@@ -509,7 +509,7 @@ DSide.Node = OBJECT((cls) => {
 											// 노드에 없는 데이터면 삭제
 											EACH(dataSet, (data, id) => {
 												if (originDataSet[id] === undefined) {
-													store.removeData({
+													store.dropData({
 														target : target,
 														id : id
 													});
@@ -522,7 +522,7 @@ DSide.Node = OBJECT((cls) => {
 								// 노드에 없는 대상이면 삭제
 								EACH(originTargetHashSet, (hash, target) => {
 									if (targetHashSet[target] === undefined) {
-										store.removeTarget(target);
+										store.dropTarget(target);
 									}
 								});
 							});
@@ -565,7 +565,7 @@ DSide.Node = OBJECT((cls) => {
 								// 노드에 없는 데이터면 삭제
 								EACH(dataSet, (data, hash) => {
 									if (originDataSet[hash] === undefined) {
-										store.removeData(hash);
+										store.dropData(hash);
 									}
 								});
 							});
@@ -625,7 +625,7 @@ DSide.Node = OBJECT((cls) => {
 											// 노드에 없는 데이터면 삭제
 											EACH(dataSet, (data, hash) => {
 												if (originDataSet[hash] === undefined) {
-													store.removeData({
+													store.dropData({
 														target : target,
 														hash : hash
 													});
@@ -638,7 +638,7 @@ DSide.Node = OBJECT((cls) => {
 								// 노드에 없는 대상이면 삭제
 								EACH(originTargetHashSet, (hash, target) => {
 									if (targetHashSet[target] === undefined) {
-										store.removeTarget(target);
+										store.dropTarget(target);
 									}
 								});
 							});

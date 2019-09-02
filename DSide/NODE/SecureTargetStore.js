@@ -306,14 +306,14 @@ DSide.SecureTargetStore = CLASS((cls) => {
 					if (originData !== undefined) {
 						
 						// 데이터가 유효한지 검사합니다.
-						if (createTime === originData.createTime && lastUpdateTime !== undefined && target === originData.target && DSide.Verify({
+						if (createTime === originData.createTime && lastUpdateTime !== undefined && target === originData.target && accountId === originData.accountId && DSide.Verify({
 							accountId : accountId,
 							data : data,
 							hash : hash
 						}) === true) {
 							
 							// 기존 데이터는 삭제합니다.
-							removeData({
+							dropData({
 								target : target,
 								hash : originHash
 							});
@@ -367,16 +367,91 @@ DSide.SecureTargetStore = CLASS((cls) => {
 				//REQUIRED: params
 				//REQUIRED: params.target
 				//REQUIRED: params.hash
+				//REQUIRED: params.checkHash
 				
-				let originData = getData(params);
+				let target = params.target;
+				let hash = params.hash;
+				let checkHash = params.checkHash;
+				
+				let originData = getData({
+					target : target,
+					hash : hash
+				});
+				
 				if (originData !== undefined) {
 					
-					let target = params.target;
-					let hash = params.hash;
+					if (DSide.Verify({
+						accountId : originData.accountId,
+						data : hash,
+						hash : checkHash
+					}) === true) {
+						
+						// 존재하지 않는 대상이면 대상을 삭제합니다.
+						if (dataMap[target] === undefined) {
+							dropTarget(target);
+						}
+						
+						else {
+							
+							delete dataMap[target][hash];
+							
+							// 빈 대상이면 대상을 삭제합니다.
+							if (CHECK_IS_EMPTY_DATA(dataMap[target]) === true) {
+								dropTarget(target);
+							}
+							
+							else {
+								
+								targetHashSet[target] = getHash(target);
+								
+								// 데이터가 변경되면 대상의 해시값도 변경됩니다.
+								isTargetHashSetEdited = true;
+								
+								isEditeds[target] = true;
+							}
+						}
+						
+						// 데이터 삭제 완료
+						return {
+							originData : originData
+						};
+					}
+					
+					// 유효하지 않은 데이터입니다.
+					else {
+						return {
+							isNotVerified : true
+						};
+					}
+				}
+				
+				// 데이터가 존재하지 않습니다.
+				else {
+					return {
+						isNotExists : true
+					};
+				}
+			};
+			
+			// 데이터를 삭제합니다.
+			let dropData = self.dropData = (params) => {
+				//REQUIRED: params
+				//REQUIRED: params.target
+				//REQUIRED: params.hash
+				
+				let target = params.target;
+				let hash = params.hash;
+				
+				let originData = getData({
+					target : target,
+					hash : hash
+				});
+				
+				if (originData !== undefined) {
 					
 					// 존재하지 않는 대상이면 대상을 삭제합니다.
 					if (dataMap[target] === undefined) {
-						removeTarget(target);
+						dropTarget(target);
 					}
 					
 					else {
@@ -385,7 +460,7 @@ DSide.SecureTargetStore = CLASS((cls) => {
 						
 						// 빈 대상이면 대상을 삭제합니다.
 						if (CHECK_IS_EMPTY_DATA(dataMap[target]) === true) {
-							removeTarget(target);
+							dropTarget(target);
 						}
 						
 						else {
@@ -398,23 +473,11 @@ DSide.SecureTargetStore = CLASS((cls) => {
 							isEditeds[target] = true;
 						}
 					}
-					
-					// 데이터 삭제 완료
-					return {
-						originData : originData
-					};
-				}
-				
-				// 데이터가 존재하지 않습니다.
-				else {
-					return {
-						isNotExists : true
-					};
 				}
 			};
 			
 			// 대상을 삭제합니다.
-			let removeTarget = self.removeTarget = (target) => {
+			let dropTarget = self.dropTarget = (target) => {
 				//REQUIRED: target
 				
 				delete dataMap[target];

@@ -217,14 +217,14 @@ DSide.SecureStore = CLASS((cls) => {
 					if (originData !== undefined) {
 						
 						// 데이터가 유효한지 검사합니다.
-						if (createTime === originData.createTime && lastUpdateTime !== undefined && DSide.Verify({
+						if (createTime === originData.createTime && lastUpdateTime !== undefined && accountId === originData.accountId && DSide.Verify({
 							accountId : accountId,
 							data : data,
 							hash : hash
 						}) === true) {
 							
 							// 기존 데이터는 삭제합니다.
-							removeData(originHash);
+							dropData(originHash);
 							
 							dataSet[hash] = data;
 							
@@ -262,7 +262,50 @@ DSide.SecureStore = CLASS((cls) => {
 			};
 			
 			// 데이터를 삭제합니다.
-			let removeData = self.removeData = (hash) => {
+			let removeData = self.removeData = (params) => {
+				//REQUIRED: params.hash
+				//REQUIRED: params.checkHash
+				
+				let hash = params.hash;
+				let checkHash = params.checkHash;
+				
+				let originData = getData(hash);
+				if (originData !== undefined) {
+					
+					if (DSide.Verify({
+						accountId : originData.accountId,
+						data : hash,
+						hash : checkHash
+					}) === true) {
+						
+						delete dataSet[hash];
+						
+						isEdited = true;
+						
+						// 데이터 삭제 완료
+						return {
+							originData : originData
+						};
+					}
+					
+					// 유효하지 않은 데이터입니다.
+					else {
+						return {
+							isNotVerified : true
+						};
+					}
+				}
+				
+				// 데이터가 존재하지 않습니다.
+				else {
+					return {
+						isNotExists : true
+					};
+				}
+			};
+			
+			// 데이터를 삭제합니다.
+			let dropData = self.dropData = (hash) => {
 				//REQUIRED: hash
 				
 				let originData = getData(hash);
@@ -271,18 +314,6 @@ DSide.SecureStore = CLASS((cls) => {
 					delete dataSet[hash];
 					
 					isEdited = true;
-					
-					// 데이터 삭제 완료
-					return {
-						originData : originData
-					};
-				}
-				
-				// 데이터가 존재하지 않습니다.
-				else {
-					return {
-						isNotExists : true
-					};
 				}
 			};
 			

@@ -38,8 +38,8 @@ DSide.AccountDetailStore = OBJECT({
 		});
 		
 		// 데이터 삭제 기능을 private으로
-		let removeData = self.removeData;
-		delete self.removeData;
+		let dropData = self.dropData;
+		delete self.dropData;
 		
 		// 데이터를 저장합니다.
 		let saveData;
@@ -65,7 +65,7 @@ DSide.AccountDetailStore = OBJECT({
 						
 						// 기존에 데이터가 있으면 제거합니다.
 						if (originHash !== undefined) {
-							removeData(originHash);
+							dropData(originHash);
 						}
 						
 						accountHashSet[accountId] = params.hash;
@@ -106,7 +106,7 @@ DSide.AccountDetailStore = OBJECT({
 				// 기존에 데이터가 있으면 제거합니다.
 				let originHash = accountHashSet[accountId];
 				if (originHash !== undefined) {
-					removeData(originHash);
+					dropData(originHash);
 				}
 				
 				origin(params);
@@ -117,6 +117,9 @@ DSide.AccountDetailStore = OBJECT({
 		
 		// 데이터 수정 기능을 제거합니다.
 		delete self.updateData;
+		
+		// 데이터 삭제 기능을 제거합니다.
+		delete self.removeData;
 		
 		// 특정 계정의 세부 내용을 가져옵니다.
 		let getAccountDetail = self.getAccountDetail = (accountId) => {

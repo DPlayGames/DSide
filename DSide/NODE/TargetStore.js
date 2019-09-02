@@ -276,7 +276,7 @@ DSide.TargetStore = CLASS((cls) => {
 						if (createTime === originData.createTime && lastUpdateTime !== undefined && target === originData.target) {
 							
 							// 기존 데이터는 삭제합니다.
-							removeData({
+							dropData({
 								target : target,
 								id : id
 							});
@@ -339,7 +339,7 @@ DSide.TargetStore = CLASS((cls) => {
 					
 					// 존재하지 않는 대상이면 대상을 삭제합니다.
 					if (dataMap[target] === undefined) {
-						removeTarget(target);
+						dropTarget(target);
 					}
 					
 					else {
@@ -348,7 +348,7 @@ DSide.TargetStore = CLASS((cls) => {
 						
 						// 빈 대상이면 대상을 삭제합니다.
 						if (CHECK_IS_EMPTY_DATA(dataMap[target]) === true) {
-							removeTarget(target);
+							dropTarget(target);
 						}
 						
 						else {
@@ -376,8 +376,47 @@ DSide.TargetStore = CLASS((cls) => {
 				}
 			};
 			
+			// 데이터를 삭제합니다.
+			let dropData = self.dropData = (params) => {
+				//REQUIRED: params
+				//REQUIRED: params.target
+				//REQUIRED: params.id
+				
+				let originData = getData(params);
+				if (originData !== undefined) {
+					
+					let target = params.target;
+					let id = params.id;
+					
+					// 존재하지 않는 대상이면 대상을 삭제합니다.
+					if (dataMap[target] === undefined) {
+						dropTarget(target);
+					}
+					
+					else {
+						
+						delete dataMap[target][id];
+						
+						// 빈 대상이면 대상을 삭제합니다.
+						if (CHECK_IS_EMPTY_DATA(dataMap[target]) === true) {
+							dropTarget(target);
+						}
+						
+						else {
+							
+							targetHashSet[target] = getHash(target);
+							
+							// 데이터가 변경되면 대상의 해시값도 변경됩니다.
+							isTargetHashSetEdited = true;
+							
+							isEditeds[target] = true;
+						}
+					}
+				}
+			};
+			
 			// 대상을 삭제합니다.
-			let removeTarget = self.removeTarget = (target) => {
+			let dropTarget = self.dropTarget = (target) => {
 				//REQUIRED: target
 				
 				delete dataMap[target];
