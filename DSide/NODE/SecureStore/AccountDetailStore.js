@@ -131,5 +131,22 @@ DSide.AccountDetailStore = OBJECT({
 				return self.getData(hash);
 			}
 		};
+		
+		// 이름으로 계정들을 찾습니다.
+		let findAccountIds = self.findAccountIds = (nameQuery) => {
+			//REQUIRED: nameQuery
+			
+			let accountIds = [];
+			
+			EACH(self.getDataSet(), (data) => {
+				
+				if (new RegExp(nameQuery, 'g').test(data.name) === true) {
+					
+					accountIds.push(data.accountId);
+				}
+			});
+			
+			return accountIds;
+		};
 	}
 });

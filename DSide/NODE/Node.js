@@ -297,6 +297,15 @@ DSide.Node = OBJECT({
 				}
 			});
 			
+			// 이름으로 계정들을 찾습니다.
+			on('findAccountIds', (nameQuery, ret) => {
+				//REQUIRED: nameQuery
+				
+				if (nameQuery !== undefined) {
+					ret(DSide.AccountDetailStore.findAccountIds(nameQuery));
+				}
+			});
+			
 			// 길드를 생성합니다.
 			on('createGuild', (params, ret) => {
 				//REQUIRED: params
