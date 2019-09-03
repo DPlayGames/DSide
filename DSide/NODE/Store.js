@@ -114,7 +114,15 @@ DSide.Store = CLASS((cls) => {
 					let lastUpdateTime = data.lastUpdateTime;
 					
 					// 데이터가 유효한지 검사합니다.
-					if (createTime !== undefined && lastUpdateTime === undefined && dataSet[id] === undefined) {
+					if (
+					createTime !== undefined &&
+					
+					// 5초 이내에 데이터가 작성된 경우에만 저장합니다.
+					DSide.Node.getNowUTC() - createTime.getTime() < 5000 &&
+					
+					lastUpdateTime === undefined &&
+					
+					dataSet[id] === undefined) {
 						
 						dataSet[id] = data;
 						
@@ -201,7 +209,13 @@ DSide.Store = CLASS((cls) => {
 					if (originData !== undefined) {
 						
 						// 데이터가 유효한지 검사합니다.
-						if (createTime === originData.createTime && lastUpdateTime !== undefined) {
+						if (
+						createTime.getTime() === originData.createTime.getTime() &&
+						
+						lastUpdateTime !== undefined &&
+						
+						// 5초 이내에 데이터가 수정된 경우에만 저장합니다.
+						DSide.Node.getNowUTC() - lastUpdateTime.getTime() < 5000) {
 							
 							// 기존 데이터는 삭제합니다.
 							dropData(id);

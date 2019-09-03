@@ -158,7 +158,15 @@ DSide.SecureTargetStore = CLASS((cls) => {
 					accountId = ETHUtil.toChecksumAddress(accountId);
 					
 					// 데이터가 유효한지 검사합니다.
-					if (createTime !== undefined && lastUpdateTime === undefined && DSide.Verify({
+					if (
+					createTime !== undefined &&
+					
+					// 5초 이내에 데이터가 작성된 경우에만 저장합니다.
+					DSide.Node.getNowUTC() - createTime.getTime() < 5000 &&
+					
+					lastUpdateTime === undefined &&
+					
+					DSide.Verify({
 						accountId : accountId,
 						data : data,
 						hash : hash
@@ -306,7 +314,19 @@ DSide.SecureTargetStore = CLASS((cls) => {
 					if (originData !== undefined) {
 						
 						// 데이터가 유효한지 검사합니다.
-						if (createTime === originData.createTime && lastUpdateTime !== undefined && target === originData.target && accountId === originData.accountId && DSide.Verify({
+						if (
+						createTime.getTime() === originData.createTime.getTime() &&
+						
+						lastUpdateTime !== undefined &&
+						
+						// 5초 이내에 데이터가 수정된 경우에만 저장합니다.
+						DSide.Node.getNowUTC() - lastUpdateTime.getTime() < 5000 &&
+						
+						target === originData.target &&
+						
+						accountId === originData.accountId &&
+						
+						DSide.Verify({
 							accountId : accountId,
 							data : data,
 							hash : hash

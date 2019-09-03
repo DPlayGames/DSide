@@ -10,7 +10,13 @@ DSide.FriendRequestStore = OBJECT({
 			
 			storeName : 'FriendRequest',
 			
-			dataStructure : {}
+			dataStructure : {
+				
+				targetAccountId : {
+					notEmpty : true,
+					size : 42
+				}
+			}
 		};
 	}
 });
