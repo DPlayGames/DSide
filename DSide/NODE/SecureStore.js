@@ -298,9 +298,7 @@ DSide.SecureStore = CLASS((cls) => {
 						hash : checkHash
 					}) === true) {
 						
-						delete dataSet[hash];
-						
-						isEdited = true;
+						dropData(hash);
 						
 						// 데이터 삭제 완료
 						return {

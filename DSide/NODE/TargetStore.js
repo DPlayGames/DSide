@@ -348,33 +348,7 @@ DSide.TargetStore = CLASS((cls) => {
 				let originData = getData(params);
 				if (originData !== undefined) {
 					
-					let target = params.target;
-					let id = params.id;
-					
-					// 존재하지 않는 대상이면 대상을 삭제합니다.
-					if (dataMap[target] === undefined) {
-						dropTarget(target);
-					}
-					
-					else {
-						
-						delete dataMap[target][id];
-						
-						// 빈 대상이면 대상을 삭제합니다.
-						if (CHECK_IS_EMPTY_DATA(dataMap[target]) === true) {
-							dropTarget(target);
-						}
-						
-						else {
-							
-							targetHashSet[target] = getHash(target);
-							
-							// 데이터가 변경되면 대상의 해시값도 변경됩니다.
-							isTargetHashSetEdited = true;
-							
-							isEditeds[target] = true;
-						}
-					}
+					dropData(params);
 					
 					// 데이터 삭제 완료
 					return {

@@ -414,6 +414,66 @@ DSide.Node = OBJECT({
 				}
 			});
 			
+			// 친구 요청 목록을 가져옵니다.
+			on('getFriendRequesterIds', (accountId, ret) => {
+				//REQUIRED: accountId
+				
+				if (accountId !== undefined) {
+					ret(DSide.FriendRequestStore.getRequesterIds(accountId));
+				}
+			});
+			
+			// 친구 요청을 거절합니다.
+			on('denyFriendRequest', (params, ret) => {
+				//REQUIRED: params
+				//REQUIRED: params.target
+				//REQUIRED: params.accountId
+				//REQUIRED: params.hash
+				
+				DSide.FriendRequestStore.deny(params);
+				
+				// 모든 노드에 전파합니다.
+				EACH(sendToNodes, (sendToNode) => {
+					sendToNode({
+						methodName : 'denyFriendRequest',
+						data : params
+					});
+				});
+			});
+			
+			// 친구 요청을 수락합니다.
+			on('acceptFriendRequest', (params, ret) => {
+				//REQUIRED: params
+				//REQUIRED: params.data
+				//REQUIRED: params.data.accountId
+				//REQUIRED: params.data.account2Id
+				//REQUIRED: params.data.createTime
+				//REQUIRED: params.hash
+				
+				let result = DSide.FriendStore.saveData(params);
+				
+				// 성공적으로 저장되면 모든 노드에 전파합니다.
+				if (result.savedData !== undefined) {
+					EACH(sendToNodes, (sendToNode) => {
+						sendToNode({
+							methodName : 'acceptFriendRequest',
+							data : params
+						});
+					});
+				}
+				
+				ret(result);
+			});
+			
+			// 친구 목록을 가져옵니다.
+			on('getFriendIds', (accountId, ret) => {
+				//REQUIRED: accountId
+				
+				if (accountId !== undefined) {
+					ret(DSide.FriendStore.getFriendIds(accountId));
+				}
+			});
+			
 			// 로그인 토큰을 생성합니다.
 			on('generateLoginToken', (notUsing, ret) => {
 				ret(loginToken = RANDOM_STR(24));

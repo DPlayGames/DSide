@@ -262,9 +262,7 @@ DSide.Store = CLASS((cls) => {
 				let originData = getData(id);
 				if (originData !== undefined) {
 					
-					delete dataSet[id];
-					
-					isEdited = true;
+					dropData(id);
 					
 					// 데이터 삭제 완료
 					return {
