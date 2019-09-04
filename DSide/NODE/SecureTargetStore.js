@@ -400,8 +400,16 @@ DSide.SecureTargetStore = CLASS((cls) => {
 				
 				if (originData !== undefined) {
 					
-					if (DSide.Verify({
+					// 내가 생성한 데이터거나, 대상이 나인 경우 삭제할 수 있습니다.
+					if (
+					DSide.Verify({
 						accountId : originData.accountId,
+						data : hash,
+						hash : checkHash
+					}) === true ||
+					
+					DSide.Verify({
+						accountId : originData.target,
 						data : hash,
 						hash : checkHash
 					}) === true) {
@@ -459,15 +467,11 @@ DSide.SecureTargetStore = CLASS((cls) => {
 				//REQUIRED: params.target
 				//REQUIRED: params.hash
 				
-				let target = params.target;
-				let hash = params.hash;
-				
-				let originData = getData({
-					target : target,
-					hash : hash
-				});
-				
+				let originData = getData(params);
 				if (originData !== undefined) {
+					
+					let target = params.target;
+					let hash = params.hash;
 					
 					// 존재하지 않는 대상이면 대상을 삭제합니다.
 					if (dataMap[target] === undefined) {

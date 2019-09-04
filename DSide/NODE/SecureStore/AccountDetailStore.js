@@ -138,13 +138,16 @@ DSide.AccountDetailStore = OBJECT({
 			
 			let accountIds = [];
 			
-			EACH(self.getDataSet(), (data) => {
+			if (nameQuery !== undefined && nameQuery.trim() !== '') {
 				
-				if (new RegExp(nameQuery, 'g').test(data.name) === true) {
+				EACH(self.getDataSet(), (data) => {
 					
-					accountIds.push(data.accountId);
-				}
-			});
+					if (new RegExp(nameQuery, 'g').test(data.name) === true) {
+						
+						accountIds.push(data.accountId);
+					}
+				});
+			}
 			
 			return accountIds;
 		};

@@ -274,13 +274,21 @@ DSide.GuildStore = OBJECT({
 			
 			// 데이터 삭제 시 해시도 삭제합니다.
 			removeData = self.removeData = (params) => {
+				//REQUIRED: params
 				//REQUIRED: params.hash
 				//REQUIRED: params.checkHash
 				
 				let result = origin(params);
 				
 				if (result.originData !== undefined) {
+					
 					delete idHashSet[result.originData.id];
+					
+					EACH(accountGuildIds, (accountGuildId, memberId) => {
+						if (accountGuildId === result.originData.id) {
+							delete accountGuildIds[memberId];
+						}
+					});
 				}
 				
 				return result;
@@ -299,7 +307,14 @@ DSide.GuildStore = OBJECT({
 				origin(hash);
 				
 				if (originData !== undefined) {
+					
 					delete idHashSet[originData.id];
+					
+					EACH(accountGuildIds, (accountGuildId, memberId) => {
+						if (accountGuildId === result.originData.id) {
+							delete accountGuildIds[memberId];
+						}
+					});
 				}
 			};
 		});

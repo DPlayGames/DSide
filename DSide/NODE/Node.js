@@ -379,6 +379,41 @@ DSide.Node = OBJECT({
 				}
 			});
 			
+			// 친구를 신청합니다.
+			on('requestFriend', (params, ret) => {
+				//REQUIRED: params
+				//REQUIRED: params.data
+				//REQUIRED: params.data.accountId
+				//REQUIRED: params.data.target
+				//REQUIRED: params.data.createTime
+				//REQUIRED: params.hash
+				
+				let result = DSide.FriendRequestStore.saveData(params);
+				
+				// 성공적으로 저장되면 모든 노드에 전파합니다.
+				if (result.savedData !== undefined) {
+					EACH(sendToNodes, (sendToNode) => {
+						sendToNode({
+							methodName : 'requestFriend',
+							data : params
+						});
+					});
+				}
+				
+				ret(result);
+			});
+			
+			// 이미 친구 신청했는지 확인합니다.
+			on('checkFriendRequested', (params, ret) => {
+				//REQUIRED: params
+				//REQUIRED: params.accountId
+				//REQUIRED: params.target
+				
+				if (params !== undefined) {
+					ret(DSide.FriendRequestStore.checkRequested(params));
+				}
+			});
+			
 			// 로그인 토큰을 생성합니다.
 			on('generateLoginToken', (notUsing, ret) => {
 				ret(loginToken = RANDOM_STR(24));
