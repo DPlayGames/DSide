@@ -195,8 +195,10 @@ DSide.GuildStore = OBJECT({
 								}) !== true) {
 									
 									// 가입 신청이 없으면 오류
-									let requestData = DSide.GuildJoinRequestStore.getAccountRequest(memberId);
-									if (requestData === undefined || requestData.guildId !== id) {
+									if (DSide.GuildJoinRequestStore.checkRequested({
+										target : id,
+										accountId : memberId
+									}) !== true) {
 										isNotVerified = true;
 									}
 								}
@@ -211,8 +213,12 @@ DSide.GuildStore = OBJECT({
 										array : originData.memberIds,
 										value : memberId
 									}) !== true) {
-										DSide.GuildJoinRequestStore.dropAccountRequest(memberId);
 										accountGuildIds[memberId] = id;
+										
+										DSide.GuildJoinRequestStore.acceptedRequest({
+											guildId : id,
+											accountId : memberId
+										});
 									}
 								});
 								
@@ -320,13 +326,38 @@ DSide.GuildStore = OBJECT({
 		});
 		
 		// 길드 정보를 가져옵니다.
-		let getGuildInfo = self.getGuildInfo = (guildId) => {
+		let getGuild = self.getGuild = (guildId) => {
 			//REQUIRED: guildId
 			
 			let hash = idHashSet[guildId];
 			if (hash !== undefined) {
 				
 				return self.getData(hash);
+			}
+		};
+		
+		// 길드 정보를 수정합니다.
+		let updateGuild = self.updateGuild = (params) => {
+			//REQUIRED: params.data
+			//REQUIRED: params.data.id
+			//REQUIRED: params.data.accountId
+			//REQUIRED: params.data.createTime
+			//REQUIRED: params.data.lastUpdateTime
+			//REQUIRED: params.hash
+			
+			let data = params.data;
+			let hash = params.hash;
+			
+			let guildId = data.id;
+			
+			let originHash = idHashSet[guildId];
+			if (originHash !== undefined) {
+				
+				return updateData({
+					originHash : originHash,
+					data : data,
+					hash : hash
+				});
 			}
 		};
 		
@@ -338,14 +369,59 @@ DSide.GuildStore = OBJECT({
 		};
 		
 		// 특정 계정이 가입한 길드 정보를 가져옵니다.
-		let getAccountGuildInfo = self.getAccountGuildInfo = (accountId) => {
+		let getAccountGuild = self.getAccountGuild = (accountId) => {
 			//REQUIRED: accountId
 			
 			let guildId = accountGuildIds[accountId];
 			if (guildId !== undefined) {
 				
-				return getGuildInfo(guildId);
+				return getGuild(guildId);
 			}
+		};
+		
+		// 회원수 순으로 길드 목록을 가져옵니다.
+		let getGuildListByMemberCount = self.getGuildListByMemberCount = () => {
+			
+			let dataSet = self.getDataSet();
+			
+			let list = [];
+			
+			EACH(dataSet, (data) => {
+				list.push(data);
+			});
+			
+			// 회원수 순으로 정렬
+			list.sort((a, b) => {
+				if (a.memberIds.length > b.memberIds.length) {
+					return -1;
+				}
+				if (a.memberIds.length < b.memberIds.length) {
+					return 1;
+				}
+				return 0;
+			});
+			
+			return list;
+		};
+		
+		// 이름으로 길드를 찾습니다.
+		let findGuilds = self.findGuilds = (nameQuery) => {
+			//REQUIRED: nameQuery
+			
+			let guildDataSet = [];
+			
+			if (nameQuery !== undefined && nameQuery.trim() !== '') {
+				
+				EACH(self.getDataSet(), (data) => {
+					
+					if (new RegExp(nameQuery, 'g').test(data.name) === true) {
+						
+						guildDataSet.push(data);
+					}
+				});
+			}
+			
+			return guildDataSet;
 		};
 	}
 });

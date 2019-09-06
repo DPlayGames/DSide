@@ -132,11 +132,11 @@ DSide.AccountDetailStore = OBJECT({
 			}
 		};
 		
-		// 이름으로 계정들을 찾습니다.
-		let findAccountIds = self.findAccountIds = (nameQuery) => {
+		// 이름으로 계정을 찾습니다.
+		let findAccounts = self.findAccounts = (nameQuery) => {
 			//REQUIRED: nameQuery
 			
-			let accountIds = [];
+			let accountDataSet = [];
 			
 			if (nameQuery !== undefined && nameQuery.trim() !== '') {
 				
@@ -144,12 +144,12 @@ DSide.AccountDetailStore = OBJECT({
 					
 					if (new RegExp(nameQuery, 'g').test(data.name) === true) {
 						
-						accountIds.push(data.accountId);
+						accountDataSet.push(data);
 					}
 				});
 			}
 			
-			return accountIds;
+			return accountDataSet;
 		};
 	}
 });

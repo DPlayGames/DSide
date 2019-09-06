@@ -297,12 +297,12 @@ DSide.Node = OBJECT({
 				}
 			});
 			
-			// 이름으로 계정들을 찾습니다.
-			on('findAccountIds', (nameQuery, ret) => {
+			// 이름으로 계정을 찾습니다.
+			on('findAccounts', (nameQuery, ret) => {
 				//REQUIRED: nameQuery
 				
 				if (nameQuery !== undefined) {
-					ret(DSide.AccountDetailStore.findAccountIds(nameQuery));
+					ret(DSide.AccountDetailStore.findAccounts(nameQuery));
 				}
 			});
 			
@@ -343,9 +343,8 @@ DSide.Node = OBJECT({
 			});
 			
 			// 길드 정보를 수정합니다.
-			on('updateGuildInfo', (params, ret) => {
+			on('updateGuild', (params, ret) => {
 				//REQUIRED: params
-				//REQUIRED: params.originHash
 				//REQUIRED: params.data
 				//REQUIRED: params.data.accountId
 				//REQUIRED: params.data.id
@@ -355,13 +354,13 @@ DSide.Node = OBJECT({
 				//REQUIRED: params.data.createTime
 				//REQUIRED: params.hash
 				
-				let result = DSide.GuildStore.updateData(params);
+				let result = DSide.GuildStore.updateGuild(params);
 				
 				// 성공적으로 저장되면 모든 노드에 전파합니다.
 				if (result.savedData !== undefined) {
 					EACH(sendToNodes, (sendToNode) => {
 						sendToNode({
-							methodName : 'updateData',
+							methodName : 'updateGuild',
 							data : params
 						});
 					});
@@ -370,13 +369,89 @@ DSide.Node = OBJECT({
 				ret(result);
 			});
 			
+			// 길드 목록을 가져옵니다.
+			on('getGuildList', (notUsing, ret) => {
+				ret(DSide.GuildStore.getGuildListByMemberCount());
+			});
+			
+			// 이름으로 길드를 찾습니다.
+			on('findGuilds', (nameQuery, ret) => {
+				//REQUIRED: nameQuery
+				
+				if (nameQuery !== undefined) {
+					ret(DSide.GuildStore.findGuilds(nameQuery));
+				}
+			});
+			
 			// 특정 유저가 가입한 길드 정보를 가져옵니다.
-			on('getAccountGuildInfo', (accountId, ret) => {
+			on('getAccountGuild', (accountId, ret) => {
 				//REQUIRED: accountId
 				
 				if (accountId !== undefined) {
-					ret(DSide.GuildStore.getAccountGuildInfo(accountId));
+					ret(DSide.GuildStore.getAccountGuild(accountId));
 				}
+			});
+			
+			// 길드 가입 신청합니다.
+			on('requestGuildJoin', (params, ret) => {
+				//REQUIRED: params
+				//REQUIRED: params.data
+				//REQUIRED: params.data.accountId
+				//REQUIRED: params.data.target
+				//REQUIRED: params.data.createTime
+				//REQUIRED: params.hash
+				
+				let result = DSide.GuildJoinRequestStore.saveData(params);
+				
+				// 성공적으로 저장되면 모든 노드에 전파합니다.
+				if (result.savedData !== undefined) {
+					EACH(sendToNodes, (sendToNode) => {
+						sendToNode({
+							methodName : 'requestGuildJoin',
+							data : params
+						});
+					});
+				}
+				
+				ret(result);
+			});
+			
+			// 이미 길드 가입 신청했는지 확인합니다.
+			on('checkGuildJoinRequested', (params, ret) => {
+				//REQUIRED: params
+				//REQUIRED: params.accountId
+				//REQUIRED: params.target
+				
+				if (params !== undefined) {
+					ret(DSide.GuildJoinRequestStore.checkRequested(params));
+				}
+			});
+			
+			// 길드 가입 신청자 목록을 가져옵니다.
+			on('getGuildJoinRequesterIds', (guildId, ret) => {
+				//REQUIRED: guildId
+				
+				if (guildId !== undefined) {
+					ret(DSide.GuildJoinRequestStore.getRequesterIds(guildId));
+				}
+			});
+			
+			// 길드 가입 신청을 거절합니다.
+			on('denyGuildJoinRequest', (params, ret) => {
+				//REQUIRED: params
+				//REQUIRED: params.target
+				//REQUIRED: params.accountId
+				//REQUIRED: params.hash
+				
+				DSide.GuildJoinRequestStore.deny(params);
+				
+				// 모든 노드에 전파합니다.
+				EACH(sendToNodes, (sendToNode) => {
+					sendToNode({
+						methodName : 'denyGuildJoinRequest',
+						data : params
+					});
+				});
 			});
 			
 			// 친구를 신청합니다.

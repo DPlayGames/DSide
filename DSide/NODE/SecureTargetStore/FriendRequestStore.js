@@ -16,15 +16,6 @@ DSide.FriendRequestStore = OBJECT({
 	
 	init : (inner, self) => {
 		
-		// 신청 내역
-		let history = {};
-		
-		EACH(self.getTargetHashSet(), (notUsing, target) => {
-			EACH(self.getDataSet(target), (data, hash) => {
-				history[data.accountId + ' -> ' + target] = hash;
-			});
-		});
-		
 		// 데이터를 저장합니다.
 		let saveData;
 		OVERRIDE(self.saveData, (origin) => {
@@ -46,12 +37,13 @@ DSide.FriendRequestStore = OBJECT({
 					
 					if (
 					// 신청 내역이 존재하면 신청 불가
-					history[accountId + ' -> ' + target] === undefined) {
+					checkRequested({
+						accountId : accountId,
+						target : target
+					}) !== true) {
 						
 						let result = origin(params);
 						if (result.savedData !== undefined) {
-							
-							history[accountId + ' -> ' + target] = params.hash;
 							
 							// 데이터 저장 완료, d를 1 깎습니다.
 							DSide.dStore.use({
@@ -78,69 +70,6 @@ DSide.FriendRequestStore = OBJECT({
 			};
 		});
 		
-		// 데이터의 싱크를 맞춥니다.
-		let syncData;
-		OVERRIDE(self.syncData, (origin) => {
-			
-			// 데이터 싱크 시 내역을 저장합니다.
-			syncData = self.syncData = (params) => {
-				//REQUIRED: params
-				//REQUIRED: params.data
-				//REQUIRED: params.data.target
-				//REQUIRED: params.data.accountId
-				//REQUIRED: params.data.createTime
-				//REQUIRED: params.hash
-				
-				let target = params.data.target;
-				let accountId = params.data.accountId;
-				
-				origin(params);
-				
-				history[accountId + ' -> ' + target] = params.hash;
-			};
-		});
-		
-		// 데이터를 삭제합니다.
-		let removeData;
-		OVERRIDE(self.removeData, (origin) => {
-			
-			// 데이터 삭제 시 내역을 삭제합니다.
-			removeData = self.removeData = (params) => {
-				//REQUIRED: params
-				//REQUIRED: params.target
-				//REQUIRED: params.hash
-				//REQUIRED: params.checkHash
-				
-				let result = origin(params);
-				
-				if (result.originData !== undefined) {
-					delete history[result.originData.accountId + ' -> ' + result.originData.target];
-				}
-				
-				return result;
-			};
-		});
-		
-		// 데이터를 삭제합니다.
-		let dropData;
-		OVERRIDE(self.dropData, (origin) => {
-			
-			// 데이터 삭제 시 내역도 삭제합니다.
-			dropData = self.dropData = (params) => {
-				//REQUIRED: params
-				//REQUIRED: params.target
-				//REQUIRED: params.hash
-				
-				let originData = self.getData(params);
-				
-				origin(params);
-				
-				if (originData !== undefined) {
-					delete history[originData.accountId + ' -> ' + originData.target];
-				}
-			};
-		});
-		
 		// 데이터 수정 기능을 제거합니다.
 		delete self.updateData;
 		
@@ -150,7 +79,18 @@ DSide.FriendRequestStore = OBJECT({
 			//REQUIRED: params.accountId
 			//REQUIRED: params.target
 			
-			return history[params.accountId + ' -> ' + params.target] !== undefined;
+			let accountId = params.accountId;
+			let target = params.target;
+			
+			let requested = false;
+			EACH(self.getDataSet(target), (data) => {
+				if (data.accountId === accountId) {
+					requested = true;
+					return false;
+				}
+			});
+			
+			return requested;
 		};
 		
 		// 친구 요청 목록을 가져옵니다.
@@ -187,9 +127,16 @@ DSide.FriendRequestStore = OBJECT({
 				hash : hash
 			}) === true) {
 				
-				dropData({
-					target : target,
-					hash : history[accountId + ' -> ' + target]
+				EACH(self.getDataSet(target), (data, hash) => {
+					if (data.accountId === accountId) {
+						
+						self.dropData({
+							target : target,
+							hash : hash
+						});
+						
+						return false;
+					}
 				});
 			}
 		};
@@ -203,9 +150,16 @@ DSide.FriendRequestStore = OBJECT({
 			let accountId = params.accountId;
 			let account2Id = params.account2Id;
 			
-			dropData({
-				target : accountId,
-				hash : history[account2Id + ' -> ' + accountId]
+			EACH(self.getDataSet(accountId), (data, hash) => {
+				if (data.accountId === account2Id) {
+					
+					self.dropData({
+						target : accountId,
+						hash : hash
+					});
+					
+					return false;
+				}
 			});
 		};
 	}
