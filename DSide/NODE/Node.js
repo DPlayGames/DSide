@@ -806,8 +806,8 @@ DSide.Node = OBJECT({
 							});
 							
 							// 노드에 없는 데이터면 삭제
-							EACH(dataSet, (data, id) => {
-								if (originDataSet[id] === undefined) {
+							EACH(originDataSet, (data, id) => {
+								if (dataSet[id] === undefined) {
 									store.dropData(id);
 								}
 							});
@@ -866,8 +866,8 @@ DSide.Node = OBJECT({
 										});
 										
 										// 노드에 없는 데이터면 삭제
-										EACH(dataSet, (data, id) => {
-											if (originDataSet[id] === undefined) {
+										EACH(originDataSet, (data, id) => {
+											if (dataSet[id] === undefined) {
 												store.dropData({
 													target : target,
 													id : id
@@ -922,8 +922,8 @@ DSide.Node = OBJECT({
 							});
 							
 							// 노드에 없는 데이터면 삭제
-							EACH(dataSet, (data, hash) => {
-								if (originDataSet[hash] === undefined) {
+							EACH(originDataSet, (data, hash) => {
+								if (dataSet[hash] === undefined) {
 									store.dropData(hash);
 								}
 							});
@@ -982,8 +982,8 @@ DSide.Node = OBJECT({
 										});
 										
 										// 노드에 없는 데이터면 삭제
-										EACH(dataSet, (data, hash) => {
-											if (originDataSet[hash] === undefined) {
+										EACH(originDataSet, (data, hash) => {
+											if (dataSet[hash] === undefined) {
 												store.dropData({
 													target : target,
 													hash : hash
