@@ -760,7 +760,9 @@ DSide.Node = OBJECT({
 									});
 								});
 								
-								callback(send);
+								if (callback !== undefined) {
+									callback(send);
+								}
 							}
 							
 							else {
