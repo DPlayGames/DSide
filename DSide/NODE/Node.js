@@ -36,9 +36,12 @@ DSide.Node = OBJECT({
 			let signedAccountId;
 			
 			// 모든 노드들에게 전파합니다.
-			let broadcastNode = (methodName, params) => {
+			let broadcastNode = (methodName, data) => {
 				EACH(sendToNodes, (sendToNode) => {
-					sendToNode(methodName, params);
+					sendToNode({
+						methodName : methodName,
+						data : data
+					});
 				});
 			};
 			
@@ -654,61 +657,89 @@ DSide.Node = OBJECT({
 			});
 			
 			// 계정 세부 내용을 저장합니다.
-			on('saveAccountDetail', (params, ret) => {
-				DSide.AccountDetailStore.saveData(params);
+			on('saveAccountDetail', (params) => {
+				if (params !== undefined) {
+					DSide.AccountDetailStore.saveData(params);
+				}
 			});
 			
 			// 길드를 생성합니다.
-			on('createGuild', (params, ret) => {
-				DSide.GuildStore.saveData(params);
+			on('createGuild', (params) => {
+				if (params !== undefined) {
+					DSide.GuildStore.saveData(params);
+				}
 			});
 			
 			// 길드 정보를 수정합니다.
-			on('updateGuild', (params, ret) => {
-				DSide.GuildStore.updateGuild(params);
+			on('updateGuild', (params) => {
+				if (params !== undefined) {
+					DSide.GuildStore.updateGuild(params);
+				}
 			});
 			
 			// 길드 가입 신청합니다.
-			on('requestGuildJoin', (params, ret) => {
-				DSide.GuildJoinRequestStore.saveData(params);
+			on('requestGuildJoin', (params) => {
+				if (params !== undefined) {
+					DSide.GuildJoinRequestStore.saveData(params);
+				}
 			});
 			
 			// 길드 가입 신청을 거절합니다.
-			on('denyGuildJoinRequest', (params, ret) => {
-				DSide.GuildJoinRequestStore.deny(params);
+			on('denyGuildJoinRequest', (params) => {
+				if (params !== undefined) {
+					DSide.GuildJoinRequestStore.deny(params);
+				}
 			});
 			
 			// 친구를 신청합니다.
-			on('requestFriend', (params, ret) => {
-				DSide.FriendRequestStore.saveData(params);
+			on('requestFriend', (params) => {
+				if (params !== undefined) {
+					DSide.FriendRequestStore.saveData(params);
+				}
 			});
 			
 			// 친구 요청을 거절합니다.
-			on('denyFriendRequest', (params, ret) => {
-				DSide.FriendRequestStore.deny(params);
+			on('denyFriendRequest', (params) => {
+				if (params !== undefined) {
+					DSide.FriendRequestStore.deny(params);
+				}
 			});
 			
 			// 친구 요청을 수락합니다.
-			on('acceptFriendRequest', (params, ret) => {
-				DSide.FriendStore.saveData(params);
+			on('acceptFriendRequest', (params) => {
+				if (params !== undefined) {
+					DSide.FriendStore.saveData(params);
+				}
 			});
 			
 			// 채팅 메시지를 저장합니다.
 			on('saveChatMessage', (params) => {
-				
-				DSide.ChatStore.saveData(params);
-				
-				// 모든 대상 클라이언트들에게 전파합니다.
-				broadcastTargetClient('newChatMessage', data.target, data);
+				if (params !== undefined) {
+					
+					let data = params.data;
+					if (data !== undefined) {
+						
+						DSide.ChatStore.saveData(params);
+						
+						// 모든 대상 클라이언트들에게 전파합니다.
+						broadcastTargetClient('newChatMessage', data.target, data);
+					}
+				}
 			});
 			
 			// 처리중인 트랜잭션을 저장합니다.
 			on('savePendingTransaction', (params) => {
-				
-				DSide.PendingTransactionStore.saveData(params);
-				
-				// 모든 대상 클라이언트들에게 전파합니다.
-				broadcastTargetClient('newPendingTransaction', data.target, data);
+				if (params !== undefined) {
+					
+					let data = params.data;
+					if (data !== undefined) {
+						
+						DSide.PendingTransactionStore.saveData(params);
+						
+						// 모든 대상 클라이언트들에게 전파합니다.
+						broadcastTargetClient('newPendingTransaction', data.target, data);
+					}
+				}
 			});
 			
 			on('__DISCONNECTED', () => {
