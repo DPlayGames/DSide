@@ -675,12 +675,14 @@ DSide.Node = OBJECT({
 				if (params !== undefined) {
 					
 					let target = params.target;
+					let network = params.network;
 					let transactionHash = params.transactionHash;
 					let message = params.message;
 					
 					let id = UUID();
 					let data = {
 						target : target,
+						network : network,
 						transactionHash : transactionHash,
 						message : message,
 						createTime : new Date()
