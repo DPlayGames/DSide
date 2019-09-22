@@ -2,7 +2,10 @@ DSide.Node = OBJECT({
 	
 	init : (inner, self) => {
 		
-		const HARD_CODED_URLS = ['localhost:8814'];
+		const HARD_CODED_URLS = [
+			'218.38.19.34:8814',
+			'175.207.29.151:8814'
+		];
 		
 		// 현재 국제 표준시를 밀리세컨드 단위로
 		let getNowUTC = self.getNowUTC = () => {
