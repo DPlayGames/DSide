@@ -70,7 +70,7 @@ DSide.SecureStore = CLASS((cls) => {
 			
 			// 모든 데이터를 가지고 만든 해쉬를 반환합니다.
 			let getHash = self.getHash = () => {
-				return DSide.Store.generateHash.generateHash(dataSet);
+				return DSide.Store.generateHash(dataSet);
 			};
 			
 			// 모든 데이터를 반환합니다.
