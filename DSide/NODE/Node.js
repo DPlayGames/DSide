@@ -29,40 +29,40 @@ DSide.Node = OBJECT({
 		let sendToClients = [];
 		let sendToTargetClientMap = {};
 		
+		// 모든 노드들에게 전파합니다.
+		let broadcastNode = (methodName, data) => {
+			EACH(sendToNodes, (sendToNode) => {
+				sendToNode({
+					methodName : methodName,
+					data : data
+				});
+			});
+		};
+		
+		// 모든 대상 클라이언트들에게 전파합니다.
+		let broadcastTargetClient = (methodName, target, data, nowClientSend) => {
+			
+			if (sendToTargetClientMap[target] !== undefined) {
+				
+				EACH(sendToTargetClientMap[target], (sendToClient) => {
+					
+					// 현재 클라이언트는 제외
+					if (sendToClient !== nowClientSend) {
+						
+						sendToClient({
+							methodName : methodName,
+							data : data
+						});
+					}
+				});
+			}
+		};
+		
 		// 다른 노드가 연결할 서버를 생성합니다.
 		WEB_SOCKET_SERVER(WEB_SERVER(CONFIG.DSide.port), (clientInfo, on, off, send, disconnect) => {
 			
 			let loginToken;
 			let signedAccountId;
-			
-			// 모든 노드들에게 전파합니다.
-			let broadcastNode = (methodName, data) => {
-				EACH(sendToNodes, (sendToNode) => {
-					sendToNode({
-						methodName : methodName,
-						data : data
-					});
-				});
-			};
-			
-			// 모든 대상 클라이언트들에게 전파합니다.
-			let broadcastTargetClient = (methodName, target, data) => {
-				
-				if (sendToTargetClientMap[target] !== undefined) {
-					
-					EACH(sendToTargetClientMap[target], (sendToClient) => {
-						
-						// 현재 클라이언트는 제외
-						if (sendToClient !== send) {
-							
-							sendToClient({
-								methodName : methodName,
-								data : data
-							});
-						}
-					});
-				}
-			};
 			
 			// 접속한 클라이언트의 IP를 반환합니다.
 			on('getClientIp', (notUsing, ret) => {
@@ -568,7 +568,7 @@ DSide.Node = OBJECT({
 						});
 						
 						// 모든 대상 클라이언트들에게 전파합니다.
-						broadcastTargetClient('newChatMessage', target, data);
+						broadcastTargetClient('newChatMessage', target, data, send);
 					}
 				}
 			});
@@ -626,7 +626,7 @@ DSide.Node = OBJECT({
 					});
 					
 					// 모든 대상 클라이언트들에게 전파합니다.
-					broadcastTargetClient('newPendingTransaction', target, data);
+					broadcastTargetClient('newPendingTransaction', target, data, send);
 				}
 			});
 			
