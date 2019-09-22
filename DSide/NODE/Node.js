@@ -677,6 +677,8 @@ DSide.Node = OBJECT({
 								
 								sendToNodes[url] = send;
 								
+								console.log(sendToNodes);
+								
 								// 운영 시작 시간을 기록합니다.
 								DSide.NodeOperationTimeStore.saveData({
 									id : url,
