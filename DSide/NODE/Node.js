@@ -650,6 +650,69 @@ DSide.Node = OBJECT({
 				
 				ret(messages);
 			});
+			
+			// 처리중인 트랜잭션을 저장합니다.
+			on('savePendingTransaction', (params) => {
+				
+				if (isNode === true && params !== undefined) {
+					
+					DSide.PendingTransactionStore.saveData(params);
+					
+					let data = params.data;
+					if (data !== undefined) {
+						
+						let target = data.target;
+						
+						// 모든 대상 클라이언트들에게 전파합니다.
+						broadcastTargetClient('newPendingTransaction', target, data);
+					}
+				}
+			});
+			
+			// 처리중인 트랜잭션을 전달받습니다.
+			on('sendPendingTransaction', (params) => {
+				
+				if (params !== undefined) {
+					
+					let target = params.target;
+					let transactionHash = params.transactionHash;
+					let message = params.message;
+					
+					let id = UUID();
+					let data = {
+						target : target,
+						transactionHash : transactionHash,
+						message : message,
+						createTime : new Date()
+					};
+					
+					DSide.PendingTransactionStore.saveData({
+						id : id,
+						data : data
+					});
+					
+					// 모든 노드들에게 전파합니다.
+					broadcastNode('savePendingTransaction', {
+						id : id,
+						data : data
+					});
+					
+					// 모든 대상 클라이언트들에게 전파합니다.
+					broadcastTargetClient('newPendingTransaction', target, data);
+				}
+			});
+			
+			// 처리중인 트랜잭션들을 가져옵니다.
+			on('getPendingTransactions', (target, ret) => {
+				
+				let transactions = [];
+				
+				EACH(DSide.PendingTransactionStore.getDataSet(target), (data) => {
+					transactions.push(data);
+				});
+				
+				ret(transactions);
+			});
 		});
 		
 		// 저장소의 싱크를 맞춥니다.
