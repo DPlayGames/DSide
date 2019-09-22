@@ -664,7 +664,10 @@ DSide.Node = OBJECT({
 					},
 					success : (on, off, send, disconnect) => {
 						
+			console.log('test');
+						
 						send('getVersion', (version) => {
+			console.log(version);
 							
 							// 버전이 같아야합니다.
 							if (version === CONFIG.DSide.version) {
