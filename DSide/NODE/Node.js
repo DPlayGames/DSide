@@ -643,8 +643,6 @@ DSide.Node = OBJECT({
 		// 다른 노드에 연결합니다.
 		let connectToNode = (url, callback) => {
 			
-			console.log(url);
-			
 			if (
 			
 			// 현재 노드와는 연결하지 않습니다.
@@ -664,10 +662,7 @@ DSide.Node = OBJECT({
 					},
 					success : (on, off, send, disconnect) => {
 						
-			console.log('test');
-						
 						send('getVersion', (version) => {
-			console.log(version);
 							
 							// 버전이 같아야합니다.
 							if (version === CONFIG.DSide.version) {
@@ -679,8 +674,6 @@ DSide.Node = OBJECT({
 								});
 								
 								sendToNodes[url] = send;
-								
-								console.log(sendToNodes);
 								
 								// 운영 시작 시간을 기록합니다.
 								DSide.NodeOperationTimeStore.saveData({
