@@ -37,6 +37,9 @@ DSide.Node = OBJECT({
 			
 			// 모든 노드들에게 전파합니다.
 			let broadcastNode = (methodName, params) => {
+				
+				console.log(sendToNodes);
+				
 				EACH(sendToNodes, (sendToNode) => {
 					sendToNode(methodName, params);
 				});
@@ -83,9 +86,6 @@ DSide.Node = OBJECT({
 			
 			// 노드끼리 서로 연결합니다.
 			on('connectNode', (port, ret) => {
-				
-				console.log(port);
-				
 				if (port !== undefined) {
 					connectToNode(clientInfo.ip + ':' + port);
 				}
