@@ -766,7 +766,7 @@ DSide.Node = OBJECT({
 		// 대상이 존재하는 저장소의 싱크를 맞춥니다.
 		let syncTargetStore = (storeName, sendToNode) => {
 			
-			let store = DSide.Store.getAllStores()[storeName];
+			let store = DSide.TargetStore.getAllStores()[storeName];
 			if (store !== undefined) {
 				
 				sendToNode({
@@ -839,7 +839,7 @@ DSide.Node = OBJECT({
 		// 보안 저장소의 싱크를 맞춥니다.
 		let syncSecureStore = (storeName, sendToNode) => {
 			
-			let store = DSide.Store.getAllStores()[storeName];
+			let store = DSide.SecureStore.getAllStores()[storeName];
 			if (store !== undefined) {
 				
 				sendToNode({
@@ -882,7 +882,7 @@ DSide.Node = OBJECT({
 		// 대상이 존재하는 보안 저장소의 싱크를 맞춥니다.
 		let syncSecureTargetStore = (storeName, sendToNode) => {
 			
-			let store = DSide.Store.getAllStores()[storeName];
+			let store = DSide.SecureTargetStore.getAllStores()[storeName];
 			if (store !== undefined) {
 				
 				sendToNode({
@@ -982,10 +982,7 @@ DSide.Node = OBJECT({
 								// 서로 연결합니다.
 								send({
 									methodName : 'connectNode',
-									data : {
-										port : CONFIG.DSide.port,
-										accountId : CONFIG.DSide.accountId
-									}
+									data : CONFIG.DSide.port
 								});
 								
 								sendToNodes[url] = send;
