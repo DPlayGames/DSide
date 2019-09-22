@@ -32,8 +32,6 @@ DSide.Node = OBJECT({
 		// 다른 노드가 연결할 서버를 생성합니다.
 		WEB_SOCKET_SERVER(WEB_SERVER(CONFIG.DSide.port), (clientInfo, on, off, send, disconnect) => {
 			
-			let isNode = false;
-			
 			let loginToken;
 			let signedAccountId;
 			
@@ -86,9 +84,7 @@ DSide.Node = OBJECT({
 			// 노드끼리 서로 연결합니다.
 			on('connectNode', (port, ret) => {
 				if (port !== undefined) {
-					connectToNode(clientInfo.ip + ':' + port, () => {
-						isNode = true;
-					});
+					connectToNode(clientInfo.ip + ':' + port);
 				}
 			});
 			
@@ -280,12 +276,7 @@ DSide.Node = OBJECT({
 				
 				// 성공적으로 저장되면 모든 노드에 전파합니다.
 				if (result.savedData !== undefined) {
-					EACH(sendToNodes, (sendToNode) => {
-						sendToNode({
-							methodName : 'saveAccountDetail',
-							data : params
-						});
-					});
+					broadcastNode('saveAccountDetail', params);
 				}
 				
 				ret(result);
@@ -325,12 +316,7 @@ DSide.Node = OBJECT({
 				
 				// 성공적으로 저장되면 모든 노드에 전파합니다.
 				if (result.savedData !== undefined) {
-					EACH(sendToNodes, (sendToNode) => {
-						sendToNode({
-							methodName : 'createGuild',
-							data : params
-						});
-					});
+					broadcastNode('createGuild', params);
 				}
 				
 				ret(result);
@@ -361,12 +347,7 @@ DSide.Node = OBJECT({
 				
 				// 성공적으로 저장되면 모든 노드에 전파합니다.
 				if (result.savedData !== undefined) {
-					EACH(sendToNodes, (sendToNode) => {
-						sendToNode({
-							methodName : 'updateGuild',
-							data : params
-						});
-					});
+					broadcastNode('updateGuild', params);
 				}
 				
 				ret(result);
@@ -408,12 +389,7 @@ DSide.Node = OBJECT({
 				
 				// 성공적으로 저장되면 모든 노드에 전파합니다.
 				if (result.savedData !== undefined) {
-					EACH(sendToNodes, (sendToNode) => {
-						sendToNode({
-							methodName : 'requestGuildJoin',
-							data : params
-						});
-					});
+					broadcastNode('requestGuildJoin', params);
 				}
 				
 				ret(result);
@@ -449,12 +425,7 @@ DSide.Node = OBJECT({
 				DSide.GuildJoinRequestStore.deny(params);
 				
 				// 모든 노드에 전파합니다.
-				EACH(sendToNodes, (sendToNode) => {
-					sendToNode({
-						methodName : 'denyGuildJoinRequest',
-						data : params
-					});
-				});
+				broadcastNode('denyGuildJoinRequest', params);
 			});
 			
 			// 친구를 신청합니다.
@@ -470,12 +441,7 @@ DSide.Node = OBJECT({
 				
 				// 성공적으로 저장되면 모든 노드에 전파합니다.
 				if (result.savedData !== undefined) {
-					EACH(sendToNodes, (sendToNode) => {
-						sendToNode({
-							methodName : 'requestFriend',
-							data : params
-						});
-					});
+					broadcastNode('requestFriend', params);
 				}
 				
 				ret(result);
@@ -511,12 +477,7 @@ DSide.Node = OBJECT({
 				DSide.FriendRequestStore.deny(params);
 				
 				// 모든 노드에 전파합니다.
-				EACH(sendToNodes, (sendToNode) => {
-					sendToNode({
-						methodName : 'denyFriendRequest',
-						data : params
-					});
-				});
+				broadcastNode('denyFriendRequest', params);
 			});
 			
 			// 친구 요청을 수락합니다.
@@ -532,12 +493,7 @@ DSide.Node = OBJECT({
 				
 				// 성공적으로 저장되면 모든 노드에 전파합니다.
 				if (result.savedData !== undefined) {
-					EACH(sendToNodes, (sendToNode) => {
-						sendToNode({
-							methodName : 'acceptFriendRequest',
-							data : params
-						});
-					});
+					broadcastNode('acceptFriendRequest', params);
 				}
 				
 				ret(result);
@@ -574,24 +530,6 @@ DSide.Node = OBJECT({
 					ret(true);
 				} else {
 					ret(false);
-				}
-			});
-			
-			// 채팅 메시지를 저장합니다.
-			on('saveChatMessage', (params) => {
-				
-				if (isNode === true && params !== undefined) {
-					
-					DSide.ChatStore.saveData(params);
-					
-					let data = params.data;
-					if (data !== undefined) {
-						
-						let target = data.target;
-						
-						// 모든 대상 클라이언트들에게 전파합니다.
-						broadcastTargetClient('newChatMessage', target, data);
-					}
 				}
 			});
 			
@@ -654,24 +592,6 @@ DSide.Node = OBJECT({
 				ret(messages);
 			});
 			
-			// 처리중인 트랜잭션을 저장합니다.
-			on('savePendingTransaction', (params) => {
-				
-				if (isNode === true && params !== undefined) {
-					
-					DSide.PendingTransactionStore.saveData(params);
-					
-					let data = params.data;
-					if (data !== undefined) {
-						
-						let target = data.target;
-						
-						// 모든 대상 클라이언트들에게 전파합니다.
-						broadcastTargetClient('newPendingTransaction', target, data);
-					}
-				}
-			});
-			
 			// 처리중인 트랜잭션을 전달받습니다.
 			on('sendPendingTransaction', (params) => {
 				
@@ -719,6 +639,138 @@ DSide.Node = OBJECT({
 				ret(transactions);
 			});
 		});
+		
+		// 다른 노드에 연결합니다.
+		let connectToNode = (url, callback) => {
+			
+			if (
+			
+			// 현재 노드와는 연결하지 않습니다.
+			url !== thisNodeURL &&
+			
+			// 이미 연결되어있는 경우 연결하지 않습니다.
+			sendToNodes[url] === undefined) {
+				
+				let splits = url.split(':');
+				
+				CONNECT_TO_WEB_SOCKET_SERVER({
+					host : splits[0],
+					port : INTEGER(splits[1])
+				}, {
+					error : () => {
+						// 연결 오류를 무시합니다.
+					},
+					success : (on, off, send, disconnect) => {
+						
+						send('getVersion', (version) => {
+							
+							// 버전이 같아야합니다.
+							if (version === CONFIG.DSide.version) {
+								
+								// 서로 연결합니다.
+								send({
+									methodName : 'connectNode',
+									data : CONFIG.DSide.port
+								});
+								
+								sendToNodes[url] = send;
+								
+								// 운영 시작 시간을 기록합니다.
+								DSide.NodeOperationTimeStore.saveData({
+									id : url,
+									data : {
+										startOperationTime : new Date(),
+										createTime : new Date()
+									}
+								});
+								
+								// 계정 세부 내용을 저장합니다.
+								on('saveAccountDetail', (params, ret) => {
+									DSide.AccountDetailStore.saveData(params);
+								});
+								
+								// 길드를 생성합니다.
+								on('createGuild', (params, ret) => {
+									DSide.GuildStore.saveData(params);
+								});
+								
+								// 길드 정보를 수정합니다.
+								on('updateGuild', (params, ret) => {
+									DSide.GuildStore.updateGuild(params);
+								});
+								
+								// 길드 가입 신청합니다.
+								on('requestGuildJoin', (params, ret) => {
+									DSide.GuildJoinRequestStore.saveData(params);
+								});
+								
+								// 길드 가입 신청을 거절합니다.
+								on('denyGuildJoinRequest', (params, ret) => {
+									DSide.GuildJoinRequestStore.deny(params);
+								});
+								
+								// 친구를 신청합니다.
+								on('requestFriend', (params, ret) => {
+									DSide.FriendRequestStore.saveData(params);
+								});
+								
+								// 친구 요청을 거절합니다.
+								on('denyFriendRequest', (params, ret) => {
+									DSide.FriendRequestStore.deny(params);
+								});
+								
+								// 친구 요청을 수락합니다.
+								on('acceptFriendRequest', (params, ret) => {
+									DSide.FriendStore.saveData(params);
+								});
+								
+								// 채팅 메시지를 저장합니다.
+								on('saveChatMessage', (params) => {
+									
+									DSide.ChatStore.saveData(params);
+									
+									// 모든 대상 클라이언트들에게 전파합니다.
+									broadcastTargetClient('newChatMessage', data.target, data);
+								});
+								
+								// 처리중인 트랜잭션을 저장합니다.
+								on('savePendingTransaction', (params) => {
+									
+									DSide.PendingTransactionStore.saveData(params);
+									
+									// 모든 대상 클라이언트들에게 전파합니다.
+									broadcastTargetClient('newPendingTransaction', data.target, data);
+								});
+								
+								on('__DISCONNECTED', () => {
+									
+									delete sendToNodes[url];
+									
+									DSide.NodeOperationTimeStore.getData(url, (data) => {
+										
+										delete data.startOperationTime;
+										data.operationTime = Date.now() - data.startOperationTime.getTime();
+										data.lastUpdateTime = new Date();
+										
+										// 운영 종료 시간을 기록합니다.
+										DSide.NodeOperationTimeStore.updateData({
+											id : url,
+											data : data
+										});
+									});
+								});
+								
+								callback(send);
+							}
+							
+							else {
+								disconnect();
+							}
+						});
+					}
+				});
+			}
+		};
 		
 		// 저장소의 싱크를 맞춥니다.
 		let syncStore = (storeName, sendToNode) => {
@@ -946,80 +998,6 @@ DSide.Node = OBJECT({
 									store.dropTarget(target);
 								}
 							});
-						});
-					}
-				});
-			}
-		};
-		
-		// 다른 노드에 연결합니다.
-		let connectToNode = (url, callback) => {
-			
-			if (
-			
-			// 현재 노드와는 연결하지 않습니다.
-			url !== thisNodeURL &&
-			
-			// 이미 연결되어있는 경우 연결하지 않습니다.
-			sendToNodes[url] === undefined) {
-				
-				let splits = url.split(':');
-				
-				CONNECT_TO_WEB_SOCKET_SERVER({
-					host : splits[0],
-					port : INTEGER(splits[1])
-				}, {
-					error : () => {
-						// 연결 오류를 무시합니다.
-					},
-					success : (on, off, send, disconnect) => {
-						
-						send('getVersion', (version) => {
-							
-							// 버전이 같아야합니다.
-							if (version === CONFIG.DSide.version) {
-								
-								// 서로 연결합니다.
-								send({
-									methodName : 'connectNode',
-									data : CONFIG.DSide.port
-								});
-								
-								sendToNodes[url] = send;
-								
-								// 운영 시작 시간을 기록합니다.
-								DSide.NodeOperationTimeStore.saveData({
-									id : url,
-									data : {
-										startOperationTime : new Date(),
-										createTime : new Date()
-									}
-								});
-								
-								on('__DISCONNECTED', () => {
-									
-									delete sendToNodes[url];
-									
-									DSide.NodeOperationTimeStore.getData(url, (data) => {
-										
-										delete data.startOperationTime;
-										data.operationTime = Date.now() - data.startOperationTime.getTime();
-										data.lastUpdateTime = new Date();
-										
-										// 운영 종료 시간을 기록합니다.
-										DSide.NodeOperationTimeStore.updateData({
-											id : url,
-											data : data
-										});
-									});
-								});
-								
-								callback(send);
-							}
-							
-							else {
-								disconnect();
-							}
 						});
 					}
 				});
