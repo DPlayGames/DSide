@@ -19,9 +19,6 @@ DSide.Node = OBJECT({
 		// 현재 노드의 URL
 		let thisNodeURL;
 		
-		// 실제로 연결된 노드 URL 목록
-		let nodeURLs = [];
-		
 		// 모든 노드들의 send 함수
 		let sendToNodes = {};
 		
@@ -68,6 +65,13 @@ DSide.Node = OBJECT({
 			
 			// 실제로 연결된 노드 URL 목록을 반환합니다.
 			on('getNodeURLs', (notUsing, ret) => {
+				
+				let nodeURLs = [];
+				
+				EACH(sendToNodes, (sendToNode, nodeURL) => {
+					nodeURLs.push(nodeURL);
+				});
+				
 				ret(nodeURLs.length === 0 ? HARD_CODED_URLS : nodeURLs);
 			});
 			
@@ -83,6 +87,9 @@ DSide.Node = OBJECT({
 			
 			// 노드끼리 서로 연결합니다.
 			on('connectNode', (port, ret) => {
+				
+				console.log(port);
+				
 				if (port !== undefined) {
 					connectToNode(clientInfo.ip + ':' + port);
 				}
@@ -726,6 +733,8 @@ DSide.Node = OBJECT({
 								
 								// 채팅 메시지를 저장합니다.
 								on('saveChatMessage', (params) => {
+									
+									console.log(params);
 									
 									DSide.ChatStore.saveData(params);
 									
