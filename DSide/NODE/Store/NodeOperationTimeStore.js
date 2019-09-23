@@ -43,7 +43,7 @@ DSide.NodeOperationTimeStore = OBJECT({
 		// 모든 노드들의 운영 시간을 초기화합니다.
 		let clearOperationTimes = self.clearOperationTimes = () => {
 			
-			EACH(getDataSet(), (data, url) => {
+			EACH(self.getDataSet(), (data, url) => {
 				
 				// 운영중인 노드가 아니면 제거합니다.
 				if (data.startOperationTime === undefined) {

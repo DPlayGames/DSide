@@ -7,7 +7,7 @@
  */
 DSide.dStore = OBJECT({
 	
-	preset : (params) => {
+	preset : () => {
 		return DSide.Store;
 	},
 	

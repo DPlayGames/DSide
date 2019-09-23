@@ -1164,10 +1164,10 @@ DSide.Node = OBJECT({
 				
 				let isDone = false;
 				
-				sendToNode.send('getAccountId', (accountId) => {
+				sendToNode('getAccountId', (accountId) => {
 					if (isDone !== true) {
 						
-						sendToNode.send({
+						sendToNode({
 							methodName : getStoreHashMethodName,
 							data : storeName
 						}, (hash) => {
@@ -1231,7 +1231,7 @@ DSide.Node = OBJECT({
 		};
 		
 		// 하루에 한 번 토큰을 지급하고, 모든 저장소의 싱크를 맞춥니다.
-		INTERVAL(1, RAR(() => {
+		INTERVAL(1, () => {
 			
 			let nowCal = CALENDAR(new Date(getNowUTC()));
 			
@@ -1249,7 +1249,7 @@ DSide.Node = OBJECT({
 					let sendToNode = sendToNodes[url];
 					if (sendToNode !== undefined) {
 						
-						sendToNode.send('getAccountId', (accountId) => {
+						sendToNode('getAccountId', (accountId) => {
 							
 							DSide.dStore.chargeNodeReward({
 								accountId : accountId,
@@ -1287,6 +1287,6 @@ DSide.Node = OBJECT({
 					});
 				});
 			}
-		}));
+		});
 	}
 });
