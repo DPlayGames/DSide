@@ -98,5 +98,20 @@ DSide.PendingTransactionStore = OBJECT({
 				watchTransaction(params.id, params.data);
 			};
 		});
+		
+		// 데이터의 싱크를 맞춥니다.
+		let syncData;
+		OVERRIDE(self.syncData, (origin) => {
+			
+			syncData = self.syncData = (params) => {
+				//REQUIRED: params.id
+				//REQUIRED: params.data
+				//REQUIRED: params.data.target
+				
+				origin(params);
+				
+				watchTransaction(params.id, params.data);
+			};
+		});
 	}
 });
