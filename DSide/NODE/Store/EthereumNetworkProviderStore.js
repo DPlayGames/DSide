@@ -29,7 +29,8 @@ DSide.EthereumNetworkProviderStore = OBJECT({
 					
 				let provider = new Web3.providers.WebsocketProvider(networkAddress);
 				provider.on('end', (e) => {
-					SHOW_ERROR('DSide.EthereumNetworkProviderStore', 'WebsocketProvider의 접속이 끊어졌습니다. 재접속합니다.');
+					
+					// 재접속
 					web3s[networkName].setProvider(getProvider());
 				});
 				

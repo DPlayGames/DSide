@@ -501,7 +501,11 @@ DSide.SecureTargetStore = CLASS((cls) => {
 						if (isEditeds[target] === true) {
 							
 							if (dataMap[target] === undefined) {
-								REMOVE_FILE('data/' + storeName + '/' + target + '.json');
+								REMOVE_FILE('data/' + storeName + '/' + target + '.json', {
+									notExists : () => {
+										// ignore.
+									}
+								});
 							}
 							
 							else {

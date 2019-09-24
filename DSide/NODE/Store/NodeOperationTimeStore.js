@@ -54,7 +54,7 @@ DSide.NodeOperationTimeStore = OBJECT({
 					
 					data.startOperationTime = new Date();
 					
-					updateData({
+					self.updateData({
 						id : url,
 						data : data
 					});
