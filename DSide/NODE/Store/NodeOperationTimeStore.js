@@ -29,7 +29,7 @@ DSide.NodeOperationTimeStore = OBJECT({
 		let getOperationTime = self.getOperationTime = (url) => {
 			//REQUIRED: url
 			
-			let data = getData(url);
+			let data = self.getData(url);
 			if (data !== undefined) {
 				
 				if (data.startOperationTime !== undefined) {
@@ -47,7 +47,7 @@ DSide.NodeOperationTimeStore = OBJECT({
 				
 				// 운영중인 노드가 아니면 제거합니다.
 				if (data.startOperationTime === undefined) {
-					dropData(url);
+					self.dropData(url);
 				}
 				
 				else {

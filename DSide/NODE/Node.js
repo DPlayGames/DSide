@@ -1278,7 +1278,6 @@ DSide.Node = OBJECT({
 					// 단일 보안 저장소들의 싱크를 맞춥니다.
 					EACH(DSide.SecureStore.getAllStores(), (store, storeName) => {
 						syncMaxWeightStore(store, 'getSecureStoreHash', storeName, syncSecureStore);
-						syncSecureStore(storeName, sendToNode);
 					});
 					
 					// 대상이 존재하는 보안 저장소들의 싱크를 맞춥니다.
