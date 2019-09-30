@@ -167,12 +167,12 @@ DSide.dStore = OBJECT({
 		// 초기 d 수량보다 부족한 계정들에 d를 충전합니다.
 		let chargeLacks = self.chargeLacks = () => {
 			
-			EACH(self.getDataSet, (data, accountId) => {
+			EACH(self.getDataSet(), (data, accountId) => {
 				
 				if (data.d < INIT_TOKEN_AMOUNT) {
 					
 					// 데이터를 삭제하면, 다음에 데이터를 생성할 때 초기 d 량으로 초기화됩니다.
-					removeAccount(accountId);
+					self.dropData(accountId);
 				}
 			});
 		};

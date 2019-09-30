@@ -43,6 +43,12 @@ DSide.PendingTransactionStore = OBJECT({
 			let retry = RAR(() => {
 				
 				if (DSide.EthereumNetworkProviderStore.getWeb3(data.network) === undefined) {
+					
+					SHOW_ERROR('DSide.PendingTransactionStore', 'Web3이 초기화되지 않았습니다.', {
+						id : id,
+						data : data
+					});
+					
 					self.dropData({
 						target : data.target,
 						id : id
@@ -55,6 +61,12 @@ DSide.PendingTransactionStore = OBJECT({
 						
 						// 트랜잭선 오류 발생
 						if (error !== TO_DELETE) {
+							
+							SHOW_ERROR('DSide.PendingTransactionStore', '트랜잭션 오류가 발생했습니다.', {
+								id : id,
+								data : data
+							});
+							
 							self.dropData({
 								target : data.target,
 								id : id
