@@ -80,10 +80,6 @@ DSide.PendingTransactionStore = OBJECT({
 						
 						// 트랜잭션 완료
 						else {
-							console.log({
-								target : data.target,
-								id : id
-							});
 							self.dropData({
 								target : data.target,
 								id : id
