@@ -169,7 +169,7 @@ DSide.dStore = OBJECT({
 			
 			EACH(self.getDataSet(), (data, accountId) => {
 				
-				if (data.d < INIT_TOKEN_AMOUNT) {
+				if (data.d < INIT_D_BALANCE) {
 					
 					// 데이터를 삭제하면, 다음에 데이터를 생성할 때 초기 d 량으로 초기화됩니다.
 					self.dropData(accountId);
