@@ -370,6 +370,15 @@ DSide.Node = OBJECT({
 				}
 			});
 			
+			// 길드 정보를 가져옵니다.
+			on('getGuild', (guildId, ret) => {
+				//REQUIRED: guildId
+				
+				if (guildId !== undefined) {
+					ret(DSide.GuildStore.getGuild(guildId));
+				}
+			});
+			
 			// 특정 유저가 가입한 길드 정보를 가져옵니다.
 			on('getAccountGuild', (accountId, ret) => {
 				//REQUIRED: accountId
