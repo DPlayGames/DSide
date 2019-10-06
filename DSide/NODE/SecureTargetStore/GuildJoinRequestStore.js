@@ -144,7 +144,23 @@ DSide.GuildJoinRequestStore = OBJECT({
 			}
 		};
 		
-		// 길드 강비 신청을 수락했으면 요청 정보는 삭제합니다.
+		// 길드 가입 신청이 있는지 확인합니다.
+		let checkRequestExists = self.checkRequestExists = (params) => {
+			//REQUIRED: params
+			//REQUIRED: params.guildId
+			//REQUIRED: params.accountId
+			
+			let guildId = params.guildId;
+			let accountId = params.accountId;
+			
+			return EACH(self.getDataSet(guildId), (data, hash) => {
+				if (data.accountId === accountId) {
+					return false;
+				}
+			}) !== true;
+		};
+		
+		// 길드 가입 신청을 수락했으면 요청 정보는 삭제합니다.
 		let acceptedRequest = self.acceptedRequest = (params) => {
 			//REQUIRED: params
 			//REQUIRED: params.guildId

@@ -71,43 +71,55 @@ DSide.FriendStore = OBJECT({
 		OVERRIDE(self.removeData, (origin) => {
 			
 			removeData = self.removeData = (params) => {
+				//REQUIRED: params.friendId
 				//REQUIRED: params.hash
-				//REQUIRED: params.checkHash
 				
+				let friendId = params.friendId;
 				let hash = params.hash;
-				let checkHash = params.checkHash;
 				
-				let originData = getData(hash);
+				let originData;
+				
+				EACH(self.getDataSet(), (data, friendHash) => {
+					
+					if (data.accountId === friendId) {
+						
+						if (DSide.Verify({
+							accountId : data.account2Id,
+							data : friendHash,
+							hash : hash
+						}) === true) {
+							
+							originData = data;
+							
+							self.dropData(friendHash);
+							
+							return false;
+						}
+					}
+					
+					if (data.account2Id === friendId) {
+						
+						if (DSide.Verify({
+							accountId : data.accountId,
+							data : friendHash,
+							hash : hash
+						}) === true) {
+							
+							originData = data;
+							
+							self.dropData(friendHash);
+							
+							return false;
+						}
+					}
+				});
+				
 				if (originData !== undefined) {
 					
-					// 두 유저 모두, 친구를 끊을 수 있습니다.
-					if (
-					DSide.Verify({
-						accountId : originData.accountId,
-						data : hash,
-						hash : checkHash
-					}) === true ||
-					
-					DSide.Verify({
-						accountId : originData.account2Id,
-						data : hash,
-						hash : checkHash
-					}) === true) {
-						
-						self.dropData(hash);
-						
-						// 데이터 삭제 완료
-						return {
-							originData : originData
-						};
-					}
-					
-					// 유효하지 않은 데이터입니다.
-					else {
-						return {
-							isNotVerified : true
-						};
-					}
+					// 데이터 삭제 완료
+					return {
+						originData : originData
+					};
 				}
 				
 				// 데이터가 존재하지 않습니다.

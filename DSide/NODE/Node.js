@@ -356,11 +356,6 @@ DSide.Node = OBJECT({
 				ret(result);
 			});
 			
-			// 길드 목록을 가져옵니다.
-			on('getGuildList', (notUsing, ret) => {
-				ret(DSide.GuildStore.getGuildListByMemberCount());
-			});
-			
 			// 이름으로 길드를 찾습니다.
 			on('findGuilds', (nameQuery, ret) => {
 				//REQUIRED: nameQuery
@@ -379,13 +374,18 @@ DSide.Node = OBJECT({
 				}
 			});
 			
-			// 특정 유저가 가입한 길드 정보를 가져옵니다.
-			on('getAccountGuild', (accountId, ret) => {
+			// 특정 유저가 가입한 길드 ID를 가져옵니다.
+			on('getAccountGuildId', (accountId, ret) => {
 				//REQUIRED: accountId
 				
 				if (accountId !== undefined) {
-					ret(DSide.GuildStore.getAccountGuild(accountId));
+					ret(DSide.GuildMemberStore.getAccountGuildId(accountId));
 				}
+			});
+			
+			// 회원수 순으로 길드 ID들을 가져옵니다.
+			on('getGuildIdsByMemberCount', (notUsing, ret) => {
+				ret(DSide.GuildMeberStore.getGuildIdsByMemberCount());
 			});
 			
 			// 길드 가입 신청합니다.
@@ -438,6 +438,37 @@ DSide.Node = OBJECT({
 				
 				// 모든 노드에 전파합니다.
 				broadcastNode('denyGuildJoinRequest', params);
+			});
+			
+			// 길드 가입 신청을 수락합니다.
+			on('acceptGuildJoinRequest', (params, ret) => {
+				//REQUIRED: params.id
+				//REQUIRED: params.data
+				//REQUIRED: params.data.target
+				//REQUIRED: params.data.createTime
+				//REQUIRED: params.hash
+				
+				DSide.GuildMemberStore.saveData(params);
+				
+				// 모든 노드에 전파합니다.
+				broadcastNode('acceptGuildJoinRequest', params);
+			});
+			
+			// 길드에서 탈퇴합니다.
+			on('leaveGuild', (params) => {
+				//REQUIRED: params
+				//REQUIRED: params.target
+				//REQUIRED: params.accountId
+				//REQUIRED: params.hash
+				
+				let result = DSide.GuildMemberStore.removeData(params);
+				
+				// 성공적으로 삭제되면 모든 노드에 전파합니다.
+				if (result.originData !== undefined) {
+					broadcastNode('leaveGuild', params);
+				}
+				
+				ret(result);
 			});
 			
 			// 친구를 신청합니다.
@@ -506,6 +537,22 @@ DSide.Node = OBJECT({
 				// 성공적으로 저장되면 모든 노드에 전파합니다.
 				if (result.savedData !== undefined) {
 					broadcastNode('acceptFriendRequest', params);
+				}
+				
+				ret(result);
+			});
+			
+			// 친구를 삭제합니다.
+			on('removeFriend', (params, ret) => {
+				//REQUIRED: params
+				//REQUIRED: params.friendId
+				//REQUIRED: params.hash
+				
+				let result = DSide.FriendStore.removeData(params);
+				
+				// 성공적으로 삭제되면 모든 노드에 전파합니다.
+				if (result.originData !== undefined) {
+					broadcastNode('removeFriend', params);
 				}
 				
 				ret(result);
@@ -715,6 +762,20 @@ DSide.Node = OBJECT({
 				}
 			});
 			
+			// 길드 가입 신청을 수락합니다.
+			on('acceptGuildJoinRequest', (params) => {
+				if (params !== undefined) {
+					DSide.GuildMemberStore.saveData(params);
+				}
+			});
+			
+			// 길드에서 탈퇴합니다.
+			on('leaveGuild', (params) => {
+				if (params !== undefined) {
+					DSide.GuildMemberStore.removeData(params);
+				}
+			});
+			
 			// 친구를 신청합니다.
 			on('requestFriend', (params) => {
 				if (params !== undefined) {
@@ -733,6 +794,13 @@ DSide.Node = OBJECT({
 			on('acceptFriendRequest', (params) => {
 				if (params !== undefined) {
 					DSide.FriendStore.saveData(params);
+				}
+			});
+			
+			// 친구를 삭제합니다.
+			on('removeFriend', (params) => {
+				if (params !== undefined) {
+					DSide.FriendStore.removeData(params);
 				}
 			});
 			
