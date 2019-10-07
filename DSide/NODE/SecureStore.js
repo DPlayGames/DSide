@@ -283,6 +283,7 @@ DSide.SecureStore = CLASS((cls) => {
 			
 			// 데이터를 삭제합니다.
 			let removeData = self.removeData = (params) => {
+				//REQUIRED: params
 				//REQUIRED: params.hash
 				//REQUIRED: params.checkHash
 				

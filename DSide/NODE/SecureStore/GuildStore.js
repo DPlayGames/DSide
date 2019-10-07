@@ -212,6 +212,14 @@ DSide.GuildStore = OBJECT({
 							id : accountId
 						});
 					});
+					
+					// 모든 길드 가입 신청 정보를 삭제합니다.
+					EACH(DSide.GuildJoinRequestStore.getDataSet(result.originData.id), (guildJoinRequestData, hash) => {
+						DSide.GuildJoinRequestStore.dropData({
+							target : result.originData.id,
+							hash : hash
+						});
+					});
 				}
 				
 				return result;
@@ -238,6 +246,14 @@ DSide.GuildStore = OBJECT({
 						DSide.GuildMemberStore.dropData({
 							target : originData.id,
 							id : accountId
+						});
+					});
+					
+					// 모든 길드 가입 신청 정보를 삭제합니다.
+					EACH(DSide.GuildJoinRequestStore.getDataSet(originData.id), (guildJoinRequestData, hash) => {
+						DSide.GuildJoinRequestStore.dropData({
+							target : originData.id,
+							hash : hash
 						});
 					});
 				}

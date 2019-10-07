@@ -471,6 +471,22 @@ DSide.Node = OBJECT({
 				ret(result);
 			});
 			
+			// 길드를 삭제합니다.
+			on('removeGuild', (params, ret) => {
+				//REQUIRED: params
+				//REQUIRED: params.hash
+				//REQUIRED: params.checkHash
+				
+				let result = DSide.GuildStore.removeData(params);
+				
+				// 성공적으로 삭제되면 모든 노드에 전파합니다.
+				if (result.originData !== undefined) {
+					broadcastNode('removeData', params);
+				}
+				
+				ret(result);
+			});
+			
 			// 친구를 신청합니다.
 			on('requestFriend', (params, ret) => {
 				//REQUIRED: params
@@ -773,6 +789,13 @@ DSide.Node = OBJECT({
 			on('leaveGuild', (params) => {
 				if (params !== undefined) {
 					DSide.GuildMemberStore.removeData(params);
+				}
+			});
+			
+			// 길드를 삭제합니다.
+			on('removeGuild', (params) => {
+				if (params !== undefined) {
+					DSide.GuildStore.removeData(params);
 				}
 			});
 			
