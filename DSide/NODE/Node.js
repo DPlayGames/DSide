@@ -458,7 +458,7 @@ DSide.Node = OBJECT({
 			});
 			
 			// 길드에서 탈퇴합니다.
-			on('leaveGuild', (params) => {
+			on('leaveGuild', (params, ret) => {
 				//REQUIRED: params
 				//REQUIRED: params.target
 				//REQUIRED: params.accountId
