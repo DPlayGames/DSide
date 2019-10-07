@@ -38,6 +38,10 @@ DSide.GuildStore = OBJECT({
 		// ID 해시 셋
 		let idHashSet = {};
 		
+		EACH(self.getDataSet(), (data, hash) => {
+			idHashSet[data.id] = hash;
+		});
+		
 		// 데이터를 저장합니다.
 		let saveData;
 		OVERRIDE(self.saveData, (origin) => {

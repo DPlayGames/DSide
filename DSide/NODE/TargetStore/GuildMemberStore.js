@@ -156,7 +156,8 @@ DSide.GuildMemberStore = OBJECT({
 					let guildInfo = DSide.GuildStore.getGuild(target);
 					
 					// 길드장 혹은 길드원만 삭제가 가능합니다.
-					if (guildInfo !== undefined && (DSide.Verify({
+					// 길드장은 스스로를 내보낼 수 없습니다.
+					if (guildInfo !== undefined && id !== guildInfo.accountId && (DSide.Verify({
 						accountId : guildInfo.accountId,
 						data : id,
 						hash : hash
