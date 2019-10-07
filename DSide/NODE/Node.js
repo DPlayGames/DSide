@@ -461,7 +461,7 @@ DSide.Node = OBJECT({
 			on('leaveGuild', (params, ret) => {
 				//REQUIRED: params
 				//REQUIRED: params.target
-				//REQUIRED: params.accountId
+				//REQUIRED: params.id
 				//REQUIRED: params.hash
 				
 				let result = DSide.GuildMemberStore.removeData(params);
