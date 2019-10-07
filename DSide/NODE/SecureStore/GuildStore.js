@@ -71,6 +71,12 @@ DSide.GuildStore = OBJECT({
 							
 							idHashSet[id] = params.hash;
 							
+							// 길드장을 멤버로 등록합니다.
+							DSide.GuildMemberStore.addGuildOwnerToMember({
+								target : id,
+								id : accountId
+							});
+							
 							// 데이터 저장 완료, d를 20 깎습니다.
 							DSide.dStore.use({
 								accountId : accountId,
