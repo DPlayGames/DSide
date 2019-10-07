@@ -85,7 +85,7 @@ DSide.FriendStore = OBJECT({
 						
 						if (DSide.Verify({
 							accountId : data.account2Id,
-							data : friendHash,
+							data : friendId,
 							hash : hash
 						}) === true) {
 							
@@ -101,7 +101,7 @@ DSide.FriendStore = OBJECT({
 						
 						if (DSide.Verify({
 							accountId : data.accountId,
-							data : friendHash,
+							data : friendId,
 							hash : hash
 						}) === true) {
 							
