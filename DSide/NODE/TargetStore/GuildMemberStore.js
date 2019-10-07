@@ -56,6 +56,8 @@ DSide.GuildMemberStore = OBJECT({
 						createTime : guildInfo.createTime
 					}
 				});
+				
+				accountGuildIds[id] = target;
 			}
 		};
 		
