@@ -241,8 +241,8 @@ DSide.GuildMemberStore = OBJECT({
 			
 			let memberIds = [];
 			
-			EACH(self.getDataSet(guildId), (memberInfo) => {
-				memberIds.push(memberInfo.id);
+			EACH(self.getDataSet(guildId), (memberInfo, memberId) => {
+				memberIds.push(memberId);
 			});
 			
 			return memberIds;
