@@ -311,7 +311,6 @@ DSide.Node = OBJECT({
 				//REQUIRED: params.data.id
 				//OPTIONAL: params.data.name
 				//OPTIONAL: params.data.introduce
-				//REQUIRED: params.data.memberIds
 				//REQUIRED: params.data.createTime
 				//REQUIRED: params.hash
 				
@@ -342,7 +341,6 @@ DSide.Node = OBJECT({
 				//REQUIRED: params.data.id
 				//OPTIONAL: params.data.name
 				//OPTIONAL: params.data.introduce
-				//REQUIRED: params.data.memberIds
 				//REQUIRED: params.data.createTime
 				//REQUIRED: params.hash
 				
@@ -386,6 +384,11 @@ DSide.Node = OBJECT({
 			// 회원수 순으로 길드 ID들을 가져옵니다.
 			on('getGuildIdsByMemberCount', (notUsing, ret) => {
 				ret(DSide.GuildMemberStore.getGuildIdsByMemberCount());
+			});
+			
+			// 길드원들의 ID들을 가져옵니다.
+			on('getGuildMemberIds', (guildId, ret) => {
+				ret(DSide.GuildMemberStore.getGuildMemberIds(guildId));
 			});
 			
 			// 길드 가입 신청합니다.

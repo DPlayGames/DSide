@@ -234,5 +234,18 @@ DSide.GuildMemberStore = OBJECT({
 			
 			return guildIds;
 		};
+		
+		// 길드원들의 ID들을 가져옵니다.
+		let getGuildMemberIds = self.getGuildMemberIds = (guildId) => {
+			//REQUIRED: guildId
+			
+			let memberIds = [];
+			
+			EACH(self.getDataSet(guildId), (memberInfo) => {
+				memberIds.push(memberInfo.id);
+			});
+			
+			return memberIds;
+		};
 	}
 });
