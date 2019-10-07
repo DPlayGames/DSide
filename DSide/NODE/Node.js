@@ -385,7 +385,7 @@ DSide.Node = OBJECT({
 			
 			// 회원수 순으로 길드 ID들을 가져옵니다.
 			on('getGuildIdsByMemberCount', (notUsing, ret) => {
-				ret(DSide.GuildMeberStore.getGuildIdsByMemberCount());
+				ret(DSide.GuildMemberStore.getGuildIdsByMemberCount());
 			});
 			
 			// 길드 가입 신청합니다.
