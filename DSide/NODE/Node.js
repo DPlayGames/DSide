@@ -481,7 +481,7 @@ DSide.Node = OBJECT({
 				
 				// 성공적으로 삭제되면 모든 노드에 전파합니다.
 				if (result.originData !== undefined) {
-					broadcastNode('removeData', params);
+					broadcastNode('removeGuild', params);
 				}
 				
 				ret(result);
