@@ -586,6 +586,26 @@ DSide.Node = OBJECT({
 				}
 			});
 			
+			// 두 유저가 친구인지 확인합니다.
+			on('checkIsFriend', (params, ret) => {
+				//REQUIRED: params
+				//REQUIRED: params.accountId
+				//REQUIRED: params.account2Id
+				
+				if (params !== undefined) {
+					
+					let accountId = params.accountId;
+					let account2Id = params.account2Id;
+					
+					if (accountId !== undefined) {
+						ret(CHECK_IS_IN({
+							array : DSide.FriendStore.getFriendIds(accountId),
+							value : account2Id
+						}));
+					}
+				}
+			});
+			
 			// 로그인 토큰을 생성합니다.
 			on('generateLoginToken', (notUsing, ret) => {
 				ret(loginToken = RANDOM_STR(24));
