@@ -859,6 +859,12 @@ DSide.Node = OBJECT({
 						
 						DSide.ChatStore.saveData(params);
 						
+						let accountDetail = DSide.AccountDetailStore.getAccountDetail(data.senderId);
+						
+						if (accountDetail !== undefined) {
+							data.senderName = accountDetail.name;
+						}
+						
 						// 모든 대상 클라이언트들에게 전파합니다.
 						broadcastTargetClient('newChatMessage', data.target, data);
 					}
