@@ -19,9 +19,6 @@ DSide.Node = OBJECT({
 		// 현재 노드의 URL
 		let thisNodeURL;
 		
-		// 실제로 연결된 노드 URL 목록
-		let nodeURLs = [];
-		
 		// 모든 노드들의 send 함수
 		let sendToNodes = {};
 		
@@ -71,6 +68,12 @@ DSide.Node = OBJECT({
 			
 			// 실제로 연결된 노드 URL 목록을 반환합니다.
 			on('getNodeURLs', (notUsing, ret) => {
+				
+				let nodeURLs = [];
+				EACH(sendToNodes, (send, url) => {
+					nodeURLs.push(url);
+				});
+				
 				ret(nodeURLs.length === 0 ? HARD_CODED_URLS : nodeURLs);
 			});
 			
@@ -755,13 +758,6 @@ DSide.Node = OBJECT({
 		
 		let initNodeHandlers = (url, on, send) => {
 			
-			REMOVE({
-				array : nodeURLs,
-				value : url
-			});
-			
-			nodeURLs.push(url);
-			
 			sendToNodes[url] = send;
 			
 			// 운영 시작 시간을 기록합니다.
@@ -894,11 +890,6 @@ DSide.Node = OBJECT({
 			});
 			
 			on('__DISCONNECTED', () => {
-				
-				REMOVE({
-					array : nodeURLs,
-					value : url
-				});
 				
 				delete sendToNodes[url];
 				
@@ -1218,9 +1209,7 @@ DSide.Node = OBJECT({
 		
 		// 최초 접속 노드로부터 모든 노드의 URL 목록을 가져와 연결합니다.
 		() => {
-			return (_nodeURLs) => {
-				
-				nodeURLs = _nodeURLs;
+			return (nodeURLs) => {
 				
 				let isFoundFastestNode;
 				

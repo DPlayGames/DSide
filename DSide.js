@@ -6,7 +6,7 @@ BOOT({
 		isDevMode : true,
 		
 		DSide : {
-			version : '0.1',
+			version : '0.2',
 			port : 8814,
 			accountId : '0x17a4823037b71aDFE8F5bE1246404B1b14Ae1195'
 		}
