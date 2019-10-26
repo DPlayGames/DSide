@@ -762,6 +762,16 @@ DSide.Node = OBJECT({
 		
 		let initNodeHandlers = (url, on, send) => {
 			
+			// 내 URL를 모른다면 가져옵니다.
+			if (thisNodeURL !== undefined) {
+				
+				send('getClientIp', (clientIp) => {
+					
+					// 현재 노드의 URL을 설정합니다.
+					thisNodeURL = clientIp + ':' + CONFIG.DSide.port;
+				});
+			}
+			
 			sendToNodes[url] = send;
 			
 			// 운영 시작 시간을 기록합니다.
