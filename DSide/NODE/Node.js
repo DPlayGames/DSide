@@ -763,7 +763,7 @@ DSide.Node = OBJECT({
 		let initNodeHandlers = (clientIp, url, on, send) => {
 			
 			// 내 URL를 모른다면 가져옵니다.
-			if (thisNodeURL !== undefined) {
+			if (thisNodeURL === undefined) {
 				
 				send('getClientIp', (clientIp) => {
 					
@@ -781,11 +781,6 @@ DSide.Node = OBJECT({
 					startOperationTime : new Date(),
 					createTime : new Date()
 				}
-			});
-			
-			// 접속한 클라이언트의 IP를 반환합니다.
-			on('getClientIp', (notUsing, ret) => {
-				ret(clientIp);
 			});
 			
 			// 계정 세부 내용을 저장합니다.
