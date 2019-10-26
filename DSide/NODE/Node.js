@@ -94,7 +94,7 @@ DSide.Node = OBJECT({
 			// 노드가 연결되었습니다.
 			on('connectNode', (port, ret) => {
 				if (port !== undefined) {
-					initNodeHandlers(clientInfo.ip + ':' + port, on, send);
+					initNodeHandlers(clientInfo.ip, clientInfo.ip + ':' + port, on, send);
 				}
 			});
 			
@@ -760,7 +760,7 @@ DSide.Node = OBJECT({
 			});
 		});
 		
-		let initNodeHandlers = (url, on, send) => {
+		let initNodeHandlers = (clientIp, url, on, send) => {
 			
 			// 내 URL를 모른다면 가져옵니다.
 			if (thisNodeURL !== undefined) {
@@ -781,6 +781,11 @@ DSide.Node = OBJECT({
 					startOperationTime : new Date(),
 					createTime : new Date()
 				}
+			});
+			
+			// 접속한 클라이언트의 IP를 반환합니다.
+			on('getClientIp', (notUsing, ret) => {
+				ret(clientIp);
 			});
 			
 			// 계정 세부 내용을 저장합니다.
@@ -1239,9 +1244,10 @@ DSide.Node = OBJECT({
 					sendToNodes[url] === undefined) {
 						
 						let splits = url.split(':');
+						let host = splits[0];
 						
 						CONNECT_TO_WEB_SOCKET_SERVER({
-							host : splits[0],
+							host : host,
 							port : INTEGER(splits[1])
 						}, {
 							error : () => {
@@ -1260,7 +1266,7 @@ DSide.Node = OBJECT({
 											data : CONFIG.DSide.port
 										});
 										
-										initNodeHandlers(url, on, send);
+										initNodeHandlers(host, url, on, send);
 										
 										// 가장 빠른 노드를 찾았습니다.
 										if (isFoundFastestNode !== true) {
