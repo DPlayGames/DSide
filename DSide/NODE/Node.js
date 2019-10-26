@@ -783,6 +783,11 @@ DSide.Node = OBJECT({
 				}
 			});
 			
+			// 접속한 클라이언트의 IP를 반환합니다.
+			on('getClientIp', (notUsing, ret) => {
+				ret(clientIp);
+			});
+			
 			// 계정 세부 내용을 저장합니다.
 			on('saveAccountDetail', (params) => {
 				if (params !== undefined) {
