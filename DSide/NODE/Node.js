@@ -74,6 +74,10 @@ DSide.Node = OBJECT({
 					nodeURLs.push(url);
 				});
 				
+				if (thisNodeURL !== undefined) {
+					nodeURLs.push(thisNodeURL);
+				}
+				
 				ret(nodeURLs.length === 0 ? HARD_CODED_URLS : nodeURLs);
 			});
 			
