@@ -755,6 +755,13 @@ DSide.Node = OBJECT({
 		
 		let initNodeHandlers = (url, on, send) => {
 			
+			REMOVE({
+				array : nodeURLs,
+				value : url
+			});
+			
+			nodeURLs.push(url);
+			
 			sendToNodes[url] = send;
 			
 			// 운영 시작 시간을 기록합니다.
@@ -887,6 +894,11 @@ DSide.Node = OBJECT({
 			});
 			
 			on('__DISCONNECTED', () => {
+				
+				REMOVE({
+					array : nodeURLs,
+					value : url
+				});
 				
 				delete sendToNodes[url];
 				
